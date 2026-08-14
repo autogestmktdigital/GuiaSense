@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Loader2, CreditCard, CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { PageLoader } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/auth-context";
-import { adminApi, AdminUser } from "@/lib/api";
-import { formatBRL, formatDateShort } from "@/lib/format";
+import { adminApi, AdminUser, AdminUserDetail } from "@/lib/api";
+import { formatBRL, formatDateShort, formatDate } from "@/lib/format";
 import { AdminNav } from "../admin-nav";
 
 type TabKey = "LIBERADO" | "PAGAMENTO_PENDENTE" | "CANCELADO" | "BLOQUEADO";
@@ -36,6 +37,20 @@ const paymentBadge: Record<string, "success" | "warning" | "danger" | "neutral">
   EXPIRED: "neutral",
 };
 
+const paymentStatusLabel: Record<string, string> = {
+  APPROVED: "Aprovado",
+  PENDING: "Pendente",
+  REJECTED: "Recusado",
+  CANCELLED: "Cancelado",
+  EXPIRED: "Expirado",
+};
+
+const planLabel: Record<string, string> = {
+  mensal: "Mensal",
+  semestral: "Semestral",
+  anual: "Anual",
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -44,12 +59,78 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<TabKey>("LIBERADO");
   const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [detail, setDetail] = useState<AdminUserDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [roleLoading, setRoleLoading] = useState<string | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<AdminUser | null>(null);
+  const [promoteCode, setPromoteCode] = useState("");
+  const [promoteError, setPromoteError] = useState("");
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
       router.replace("/dashboard");
     }
   }, [user, router]);
+
+  async function openDetail(item: AdminUser) {
+    setSelectedUser(item);
+    setDetail(null);
+    setDetailError("");
+    setDetailLoading(true);
+    try {
+      const data = await adminApi.userDetail(item.id);
+      setDetail(data);
+    } catch (err) {
+      setDetailError(err instanceof Error ? err.message : "Não foi possível carregar os dados.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function changeRole(item: AdminUser, role: "ADMIN" | "USER") {
+    if (role === "ADMIN") {
+      setPromoteTarget(item);
+      setPromoteCode("");
+      setPromoteError("");
+      return;
+    }
+    setRoleLoading(item.id);
+    try {
+      await adminApi.setUserRole(item.id, "USER");
+      setUsers((current) =>
+        (current ?? []).map((entry) => (entry.id === item.id ? { ...entry, role: "USER" } : entry)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível alterar o papel.");
+    } finally {
+      setRoleLoading(null);
+    }
+  }
+
+  async function confirmPromote() {
+    if (!promoteTarget) return;
+    if (!promoteCode.trim()) {
+      setPromoteError("A senha de administrador é obrigatória.");
+      return;
+    }
+    setRoleLoading(promoteTarget.id);
+    setPromoteError("");
+    try {
+      await adminApi.setUserRole(promoteTarget.id, "ADMIN", promoteCode.trim());
+      setUsers((current) =>
+        (current ?? []).map((entry) =>
+          entry.id === promoteTarget.id ? { ...entry, role: "ADMIN" } : entry,
+        ),
+      );
+      setPromoteTarget(null);
+    } catch (err) {
+      setPromoteError(err instanceof Error ? err.message : "Não foi possível alterar o papel.");
+    } finally {
+      setRoleLoading(null);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -156,7 +237,7 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 font-semibold">Acesso</th>
                 <th className="px-4 py-3 font-semibold">Tipo</th>
                 <th className="px-4 py-3 font-semibold">Cadastro</th>
-                <th className="px-4 py-3 font-semibold">Movimentações</th>
+                <th className="px-4 py-3 font-semibold">Meses contratados</th>
                 <th className="px-4 py-3 font-semibold">Último pagamento</th>
               </tr>
             </thead>
@@ -164,8 +245,16 @@ export default function AdminUsersPage() {
               {filtered.map((item) => (
                 <tr key={item.id} className="border-b border-slate-50">
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-800">{item.name}</p>
-                    <p className="text-xs text-slate-400">{item.email}</p>
+                    <button
+                      type="button"
+                      onClick={() => openDetail(item)}
+                      className="text-left"
+                    >
+                      <p className="font-semibold text-slate-800 underline-offset-2 transition-colors hover:text-brand-600 hover:underline">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-slate-400">{item.email}</p>
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <Badge severity={accessBadge[item.accessStatus] ?? "neutral"}>
@@ -178,20 +267,44 @@ export default function AdminUsersPage() {
                             : "Bloqueado"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3">
                     {item.role === "ADMIN" ? (
-                      <span className="font-semibold text-brand-600">Admin</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-brand-600">Admin</span>
+                        {item.id !== user?.id && (
+                          <button
+                            type="button"
+                            onClick={() => changeRole(item, "USER")}
+                            disabled={roleLoading === item.id}
+                            className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
+                          >
+                            {roleLoading === item.id ? "..." : "Remover admin"}
+                          </button>
+                        )}
+                      </div>
                     ) : (
-                      "Usuário"
+                      <button
+                        type="button"
+                        onClick={() => changeRole(item, "ADMIN")}
+                        disabled={roleLoading === item.id}
+                        className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-50"
+                      >
+                        {roleLoading === item.id ? "..." : "Promover a admin"}
+                      </button>
                     )}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{formatDateShort(item.createdAt)}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.transactions}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
+                      <CalendarDays className="h-3.5 w-3.5" /> {item.monthsHired}{" "}
+                      {item.monthsHired === 1 ? "mês" : "meses"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     {item.lastPayment ? (
                       <div className="flex items-center gap-2">
                         <Badge severity={paymentBadge[item.lastPayment.status] ?? "neutral"}>
-                          {item.lastPayment.status}
+                          {paymentStatusLabel[item.lastPayment.status] ?? item.lastPayment.status}
                         </Badge>
                         <span className="text-slate-600">
                           {formatBRL(Number(item.lastPayment.amountBRL))}
@@ -216,6 +329,101 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </Card>
+
+      <Modal
+        open={selectedUser !== null}
+        onClose={() => setSelectedUser(null)}
+        title={selectedUser ? `Plano e pagamentos de ${selectedUser.name}` : "Detalhes"}
+      >
+        {selectedUser && (
+          <p className="mb-3 text-xs text-slate-500">{selectedUser.email}</p>
+        )}
+        {detailLoading && (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+          </div>
+        )}
+        {detailError && <p className="text-sm font-medium text-rose-600">{detailError}</p>}
+        {detail && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Plano cadastrado</p>
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-extrabold text-brand-700">
+                  <CreditCard className="h-4 w-4" /> {planLabel[detail.currentPlan ?? ""] ?? "—"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Meses contratados</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-900">
+                  {detail.monthsHired} {detail.monthsHired === 1 ? "mês" : "meses"}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-bold text-slate-800">Histórico de pagamentos</h3>
+              {detail.payments.length === 0 ? (
+                <p className="py-4 text-center text-sm text-slate-400">
+                  Nenhum pagamento registrado.
+                </p>
+              ) : (
+                <div className="max-h-[55vh] overflow-y-auto">
+                  <ul className="divide-y divide-slate-100">
+                    {detail.payments.map((payment) => (
+                      <li key={payment.id} className="flex items-center justify-between gap-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800">
+                            {planLabel[payment.plan] ?? payment.plan}
+                          </p>
+                          <p className="text-xs text-slate-400">{formatDate(payment.createdAt)}</p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <span className="text-sm font-bold text-slate-900">
+                            {formatBRL(payment.amountBRL)}
+                          </span>
+                          <Badge severity={paymentBadge[payment.status] ?? "neutral"}>
+                            {paymentStatusLabel[payment.status] ?? payment.status}
+                          </Badge>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={promoteTarget !== null}
+        onClose={() => setPromoteTarget(null)}
+        title={promoteTarget ? `Promover ${promoteTarget.name} a admin` : "Promover a admin"}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Digite a senha exclusiva de administrador para confirmar a promoção.
+          </p>
+          <input
+            type="password"
+            value={promoteCode}
+            onChange={(event) => setPromoteCode(event.target.value)}
+            placeholder="Senha de administrador"
+            autoFocus
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+          {promoteError && <p className="text-sm font-medium text-rose-600">{promoteError}</p>}
+          <div className="flex gap-2">
+            <Button onClick={confirmPromote} loading={roleLoading !== null}>
+              Promover
+            </Button>
+            <Button variant="secondary" onClick={() => setPromoteTarget(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

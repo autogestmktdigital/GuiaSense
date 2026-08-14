@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users } from "lucide-react";
+import { LayoutDashboard, Users, Wallet, CalendarDays } from "lucide-react";
 
 const items = [
   { href: "/admin", label: "Painel", icon: LayoutDashboard },
   { href: "/admin/users", label: "Usuários", icon: Users },
+  { href: "/admin/users-by-month", label: "Usuários por mês", icon: CalendarDays },
+  { href: "/admin/revenue", label: "Receita", icon: Wallet },
 ];
 
 export function AdminNav() {

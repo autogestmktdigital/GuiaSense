@@ -41,8 +41,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (!response.ok) {
     let message = "Algo deu errado. Tente novamente.";
     try {
-      const body = (await response.json()) as { message?: string; details?: unknown };
-      if (body.message) message = body.message;
+      const body = (await response.json()) as { message?: string; error?: string; details?: unknown };
+      message = body.message ?? body.error ?? message;
       throw new ApiError(response.status, message, body.details);
     } catch (error) {
       if (error instanceof ApiError) throw error;
@@ -168,7 +168,7 @@ export type AdminOverview = {
     approvedPaymentsLast30d: number;
     newUsersLast30d: number;
     revenue: number;
-    revenueLast30d: number;
+    revenueCurrentMonth: number;
   };
   users: {
     total: number;
@@ -205,12 +205,55 @@ export type AdminUser = {
   role: string;
   createdAt: string;
   transactions: number;
-  lastPayment: { status: string; amountBRL: string; createdAt: string } | null;
+  monthsHired: number;
+  lastPayment: { status: string; plan: string; amountBRL: string; createdAt: string } | null;
+};
+
+export type AdminRevenueMonth = {
+  month: string;
+  amountBRL: number;
+};
+
+export type AdminUsersMonth = {
+  month: string;
+  newUsers: number;
+  payingUsers: number;
+};
+
+export type AdminUserPayment = {
+  id: string;
+  status: string;
+  plan: string;
+  amountBRL: number;
+  createdAt: string;
+};
+
+export type AdminUserDetail = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    accessStatus: string;
+    role: string;
+    createdAt: string;
+    planExpiresAt: string | null;
+  };
+  monthsHired: number;
+  currentPlan: string | null;
+  payments: AdminUserPayment[];
 };
 
 export const adminApi = {
   overview: () => apiFetch<AdminOverview>("/admin/overview"),
   users: () => apiFetch<{ users: AdminUser[] }>("/admin/users"),
+  revenue: () => apiFetch<{ months: AdminRevenueMonth[] }>("/admin/revenue"),
+  usersByMonth: () => apiFetch<{ months: AdminUsersMonth[] }>("/admin/users-by-month"),
+  userDetail: (userId: string) => apiFetch<AdminUserDetail>(`/admin/users/${userId}`),
+  setUserRole: (userId: string, role: "ADMIN" | "USER", code?: string) =>
+    apiFetch<{ user: { id: string; email: string; role: string } }>(`/admin/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role, code }),
+    }),
 };
 
 export const categoriesApi = {

@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Shield,
   Users,
+  Wallet,
+  CalendarDays,
   Clock,
   Ban,
   CheckCircle2,
@@ -45,6 +47,8 @@ function useNavItems(): NavItem[] {
       { kind: "section", label: "Administração" },
       { href: "/admin", label: "Painel", icon: Shield },
       { href: "/admin/users", label: "Usuários", icon: Users },
+      { href: "/admin/users-by-month", label: "Usuários por mês", icon: CalendarDays },
+      { href: "/admin/revenue", label: "Receita", icon: Wallet },
     );
   }
   return items;

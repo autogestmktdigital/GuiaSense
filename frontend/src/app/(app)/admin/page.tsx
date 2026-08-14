@@ -34,6 +34,14 @@ const paymentBadge: Record<string, "success" | "warning" | "danger" | "neutral">
   EXPIRED: "neutral",
 };
 
+const paymentStatusLabel: Record<string, string> = {
+  APPROVED: "Aprovado",
+  PENDING: "Pendente",
+  REJECTED: "Recusado",
+  CANCELLED: "Cancelado",
+  EXPIRED: "Expirado",
+};
+
 function StatCard({
   label,
   value,
@@ -179,7 +187,9 @@ export default function AdminPage() {
             {Object.entries(byStatus).map(([status, count]) => (
               <li key={status} className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2 text-slate-600">
-                  <Badge severity={paymentBadge[status] ?? "neutral"}>{status}</Badge>
+                  <Badge severity={paymentBadge[status] ?? "neutral"}>
+                    {paymentStatusLabel[status] ?? status}
+                  </Badge>
                 </span>
                 <span className="font-bold text-slate-900">{String(count)}</span>
               </li>
@@ -198,8 +208,8 @@ export default function AdminPage() {
               <span className="font-bold text-slate-900">{overview?.users?.byRole?.ADMIN ?? 0}</span>
             </li>
             <li className="flex items-center justify-between">
-              <span>Receita últimos 30 dias</span>
-              <span className="font-bold text-slate-900">{formatBRL(totals?.revenueLast30d ?? 0)}</span>
+              <span>Receita no mês vigente</span>
+              <span className="font-bold text-slate-900">{formatBRL(totals?.revenueCurrentMonth ?? 0)}</span>
             </li>
             <li className="flex items-center justify-between">
               <span>Total de usuários</span>
@@ -261,7 +271,9 @@ export default function AdminPage() {
                   </td>
                   <td className="px-3 py-2.5 text-slate-600">{formatBRL(payment.amountBRL)}</td>
                   <td className="px-3 py-2.5">
-                    <Badge severity={paymentBadge[payment.status] ?? "neutral"}>{payment.status}</Badge>
+                    <Badge severity={paymentBadge[payment.status] ?? "neutral"}>
+                      {paymentStatusLabel[payment.status] ?? payment.status}
+                    </Badge>
                   </td>
                   <td className="px-3 py-2.5 text-slate-600">{formatDateShort(payment.createdAt)}</td>
                 </tr>

@@ -21,4 +21,5 @@ export const env = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
   mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "",
   mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET || "",
+  adminPromotionCode: process.env.ADMIN_PROMOTION_CODE || "",
 };

@@ -9,7 +9,7 @@ export async function getOverview() {
     approvedPaymentsLast30d,
     newUsersLast30d,
     totalRevenue,
-    revenueLast30d,
+    revenueCurrentMonth,
     recentUsers,
     recentPayments,
   ] = await Promise.all([
@@ -25,7 +25,10 @@ export async function getOverview() {
     }),
     prisma.payment.aggregate({ where: { status: "APPROVED" }, _sum: { amountBRL: true } }),
     prisma.payment.aggregate({
-      where: { status: "APPROVED", createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      where: {
+        status: "APPROVED",
+        createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+      },
       _sum: { amountBRL: true },
     }),
     prisma.user.findMany({
@@ -72,7 +75,7 @@ export async function getOverview() {
       approvedPaymentsLast30d,
       newUsersLast30d,
       revenue: Number(totalRevenue._sum.amountBRL || 0),
-      revenueLast30d: Number(revenueLast30d._sum.amountBRL || 0),
+      revenueCurrentMonth: Number(revenueCurrentMonth._sum.amountBRL || 0),
     },
     users: {
       total: totalUsers,
@@ -102,6 +105,67 @@ export async function getOverview() {
   };
 }
 
+export async function getRevenueByMonth() {
+  const payments = await prisma.payment.findMany({
+    where: { status: "APPROVED" },
+    select: { amountBRL: true, createdAt: true },
+  });
+
+  const byMonth = new Map<string, number>();
+  for (const payment of payments) {
+    const key = `${payment.createdAt.getFullYear()}-${String(payment.createdAt.getMonth() + 1).padStart(2, "0")}`;
+    byMonth.set(key, (byMonth.get(key) ?? 0) + Number(payment.amountBRL));
+  }
+
+  return Array.from(byMonth, ([month, amountBRL]) => ({ month, amountBRL })).sort((a, b) =>
+    a.month.localeCompare(b.month),
+  );
+}
+
+export async function getUsersByMonth() {
+  const [users, approvedPayments] = await Promise.all([
+    prisma.user.findMany({ select: { createdAt: true } }),
+    prisma.payment.findMany({
+      where: { status: "APPROVED" },
+      select: { userId: true, createdAt: true },
+    }),
+  ]);
+
+  const byMonth = new Map<string, { newUsers: number; payingUsers: Set<string> }>();
+  const monthKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  for (const user of users) {
+    const key = monthKey(user.createdAt);
+    const entry = byMonth.get(key) ?? { newUsers: 0, payingUsers: new Set() };
+    entry.newUsers += 1;
+    byMonth.set(key, entry);
+  }
+
+  for (const payment of approvedPayments) {
+    const key = monthKey(payment.createdAt);
+    const entry = byMonth.get(key) ?? { newUsers: 0, payingUsers: new Set() };
+    entry.payingUsers.add(payment.userId);
+    byMonth.set(key, entry);
+  }
+
+  return Array.from(byMonth, ([month, entry]) => ({
+    month,
+    newUsers: entry.newUsers,
+    payingUsers: entry.payingUsers.size,
+  })).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+const PLAN_MONTHS: Record<string, number> = {
+  mensal: 1,
+  semestral: 6,
+  anual: 12,
+};
+
+function monthsForPlan(plan: string | null | undefined): number {
+  return plan ? PLAN_MONTHS[plan] ?? 0 : 0;
+}
+
 export async function listUsers() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
@@ -115,8 +179,7 @@ export async function listUsers() {
       _count: { select: { transactions: true, payments: true } },
       payments: {
         orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { status: true, amountBRL: true, createdAt: true },
+        select: { status: true, plan: true, amountBRL: true, createdAt: true },
       },
     },
   });
@@ -129,8 +192,49 @@ export async function listUsers() {
     role: user.role,
     createdAt: user.createdAt,
     transactions: user._count.transactions,
+    monthsHired: user.payments
+      .filter((payment) => payment.status === "APPROVED")
+      .reduce((sum, payment) => sum + monthsForPlan(payment.plan), 0),
     lastPayment: user.payments[0] ?? null,
   }));
+}
+
+export async function getUserDetail(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { payments: { orderBy: { createdAt: "desc" } } },
+  });
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const approved = user.payments.filter((payment) => payment.status === "APPROVED");
+  const monthsHired = approved.reduce(
+    (sum, payment) => sum + monthsForPlan(payment.plan),
+    0,
+  );
+  const currentPlan = approved[0]?.plan ?? user.payments[0]?.plan ?? null;
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      accessStatus: user.accessStatus,
+      role: user.role,
+      createdAt: user.createdAt,
+      planExpiresAt: user.planExpiresAt,
+    },
+    monthsHired,
+    currentPlan,
+    payments: user.payments.map((payment) => ({
+      id: payment.id,
+      status: payment.status,
+      plan: payment.plan,
+      amountBRL: Number(payment.amountBRL),
+      createdAt: payment.createdAt,
+    })),
+  };
 }
 
 export function paymentStatusLabel(status: string): string {
@@ -163,5 +267,17 @@ export async function promoteAdmin(email: string): Promise<{ email: string; role
     where: { id: user.id },
     data: { role: "ADMIN" },
     select: { email: true, role: true },
+  });
+}
+
+export async function setUserRole(userId: string, role: "ADMIN" | "USER") {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { role },
+    select: { id: true, email: true, role: true },
   });
 }
