@@ -254,6 +254,19 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify({ role, code }),
     }),
+  grantBonus: (userId: string, days: number) =>
+    apiFetch<{
+      user: {
+        id: string;
+        name: string;
+        email: string;
+        accessStatus: string;
+        planExpiresAt: string | null;
+      };
+    }>(`/admin/users/${userId}/bonus`, {
+      method: "POST",
+      body: JSON.stringify({ days }),
+    }),
 };
 
 export const categoriesApi = {

@@ -67,6 +67,9 @@ export default function AdminUsersPage() {
   const [promoteTarget, setPromoteTarget] = useState<AdminUser | null>(null);
   const [promoteCode, setPromoteCode] = useState("");
   const [promoteError, setPromoteError] = useState("");
+  const [bonusDays, setBonusDays] = useState("30");
+  const [bonusLoading, setBonusLoading] = useState(false);
+  const [bonusMessage, setBonusMessage] = useState("");
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
@@ -106,6 +109,27 @@ export default function AdminUsersPage() {
       setError(err instanceof Error ? err.message : "Não foi possível alterar o papel.");
     } finally {
       setRoleLoading(null);
+    }
+  }
+
+  async function grantBonus(userId: string) {
+    const days = Number(bonusDays);
+    if (!Number.isInteger(days) || days < 1) {
+      setBonusMessage("");
+      setDetailError("Informe uma quantidade de dias válida.");
+      return;
+    }
+    setBonusLoading(true);
+    setBonusMessage("");
+    setDetailError("");
+    try {
+      const data = await adminApi.grantBonus(userId, days);
+      setBonusMessage(`Bônus de ${days} dia${days === 1 ? "" : "s"} concedido. Novo vencimento: ${data.user.planExpiresAt ? formatDate(data.user.planExpiresAt) : "—"}.`);
+      setDetail((current) => (current ? { ...current, user: { ...current.user, ...data.user } } : current));
+    } catch (err) {
+      setDetailError(err instanceof Error ? err.message : "Não foi possível conceder o bônus.");
+    } finally {
+      setBonusLoading(false);
     }
   }
 
@@ -390,6 +414,34 @@ export default function AdminUsersPage() {
                     ))}
                   </ul>
                 </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+              <p className="text-sm font-bold text-emerald-800">Conceder bônus de acesso</p>
+              <p className="mt-0.5 text-xs text-emerald-700">
+                Libera o sistema sem pagamento (ex.: indicação de amigo). Os dias somam ao período
+                atual.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={bonusDays}
+                  onChange={(event) => setBonusDays(event.target.value)}
+                  placeholder="Dias"
+                  className="h-10 w-28 rounded-xl border border-emerald-200 bg-white px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+                <Button
+                  onClick={() => grantBonus(detail.user.id)}
+                  loading={bonusLoading}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Conceder
+                </Button>
+              </div>
+              {bonusMessage && (
+                <p className="mt-2 text-xs font-medium text-emerald-700">{bonusMessage}</p>
               )}
             </div>
           </div>

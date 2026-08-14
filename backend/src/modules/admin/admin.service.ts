@@ -237,6 +237,28 @@ export async function getUserDetail(userId: string) {
   };
 }
 
+export async function grantAccessBonus(userId: string, days: number) {
+  if (!Number.isInteger(days) || days < 1 || days > 3650) {
+    throw new Error("Informe uma quantidade de dias válida (1 a 3650).");
+  }
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const now = Date.now();
+  const base = user.planExpiresAt && user.planExpiresAt.getTime() > now
+    ? user.planExpiresAt.getTime()
+    : now;
+  const planExpiresAt = new Date(base + days * 24 * 60 * 60 * 1000);
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { accessStatus: "LIBERADO", planExpiresAt },
+    select: { id: true, name: true, email: true, accessStatus: true, planExpiresAt: true },
+  });
+}
+
 export function paymentStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     PENDING: "Pendente",

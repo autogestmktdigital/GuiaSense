@@ -9,6 +9,7 @@ import {
   getUsersByMonth,
   getUserDetail,
   setUserRole,
+  grantAccessBonus,
   paymentStatusLabel,
   accessStatusLabel,
 } from "./admin.service";
@@ -57,6 +58,12 @@ router.patch("/users/:userId/role", async (req: AuthRequest, res) => {
     }
   }
   const user = await setUserRole(req.params.userId, role);
+  res.json({ user });
+});
+
+router.post("/users/:userId/bonus", async (req: AuthRequest, res) => {
+  const days = Number(req.body?.days ?? 0);
+  const user = await grantAccessBonus(req.params.userId, days);
   res.json({ user });
 });
 
