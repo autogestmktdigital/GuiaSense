@@ -214,14 +214,10 @@ function normalize(text: string): string {
 
 const KNOWN_CATEGORIES = [
   "Alimentação",
-  "Assinaturas",
-  "Compras",
-  "Cuidados Pessoais",
   "Educação",
-  "Família",
-  "Financeiro",
-  "Impostos e Taxas",
-  "Lazer",
+  "Financeiro e Impostos",
+  "Lazer e Assinaturas",
+  "Compras e Cuidados",
   "Moradia",
   "Outras Despesas",
   "Saúde",

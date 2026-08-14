@@ -63,7 +63,8 @@ export type PublicUser = {
   id: string;
   name: string;
   email: string;
-  accessStatus: "LIBERADO" | "PAGAMENTO_PENDENTE" | "BLOQUEADO";
+  accessStatus: "LIBERADO" | "PAGAMENTO_PENDENTE" | "BLOQUEADO" | "CANCELADO";
+  role?: "USER" | "ADMIN";
   createdAt: string;
 };
 
@@ -157,6 +158,59 @@ export const authApi = {
 export const usersApi = {
   update: (body: { name: string }) =>
     apiFetch<{ user: PublicUser }>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
+  cancelSubscription: () =>
+    apiFetch<{ user: PublicUser }>("/users/cancel-subscription", { method: "POST" }),
+};
+
+export type AdminOverview = {
+  totals: {
+    users: number;
+    approvedPaymentsLast30d: number;
+    newUsersLast30d: number;
+    revenue: number;
+    revenueLast30d: number;
+  };
+  users: {
+    total: number;
+    byAccess: Record<string, number>;
+    byRole: Record<string, number>;
+  };
+  payments: {
+    byStatus: Record<string, number>;
+  };
+  recentUsers: {
+    id: string;
+    name: string;
+    email: string;
+    accessStatus: string;
+    role: string;
+    createdAt: string;
+    transactions: number;
+  }[];
+  recentPayments: {
+    id: string;
+    status: string;
+    plan: string;
+    amountBRL: number;
+    createdAt: string;
+    userName: string | null;
+  }[];
+};
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  accessStatus: string;
+  role: string;
+  createdAt: string;
+  transactions: number;
+  lastPayment: { status: string; amountBRL: string; createdAt: string } | null;
+};
+
+export const adminApi = {
+  overview: () => apiFetch<AdminOverview>("/admin/overview"),
+  users: () => apiFetch<{ users: AdminUser[] }>("/admin/users"),
 };
 
 export const categoriesApi = {
@@ -207,18 +261,32 @@ export const insightsApi = {
   list: () => apiFetch<{ insights: Insight[] }>("/insights"),
 };
 
+export type PlanId = "mensal" | "semestral" | "anual";
+
+export type Plan = {
+  id: PlanId;
+  label: string;
+  priceBRL: number;
+  days: number;
+  tagline: string;
+  note: string;
+  featured?: boolean;
+};
+
 export type PaymentStatusResponse = {
   accessStatus: PublicUser["accessStatus"];
   paymentStatus: string | null;
-  lastPayment: { id: string; status: string; amountBRL: string; createdAt: string } | null;
+  planExpiresAt: string | null;
+  lastPayment: { id: string; status: string; plan: string; amountBRL: string; createdAt: string } | null;
 };
 
 export const paymentsApi = {
+  plans: () => apiFetch<{ plans: Plan[] }>("/payments/plans"),
   status: () => apiFetch<PaymentStatusResponse>("/payments/status"),
-  checkout: () =>
+  checkout: (plan: PlanId) =>
     apiFetch<{ mode: "simulated" | "mercadopago"; paymentId: string; initPoint?: string }>(
       "/payments/checkout",
-      { method: "POST", body: JSON.stringify({}) },
+      { method: "POST", body: JSON.stringify({ plan }) },
     ),
   simulate: (paymentId: string) =>
     apiFetch<{ ok: boolean }>(`/payments/simulate/${paymentId}`, { method: "POST", body: JSON.stringify({}) }),

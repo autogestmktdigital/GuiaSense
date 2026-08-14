@@ -10,6 +10,8 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Shield,
+  Users,
   Clock,
   Ban,
   CheckCircle2,
@@ -18,25 +20,57 @@ import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/ui/logo";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
-import { paymentsApi } from "@/lib/api";
+import { paymentsApi, Plan, PlanId } from "@/lib/api";
+import { formatBRL } from "@/lib/format";
 
-const navItems = [
+type NavItem = {
+  kind?: "section";
+  href?: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+};
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/transactions", label: "Movimentações", icon: ArrowLeftRight },
   { href: "/alerts", label: "Alertas", icon: Bell },
   { href: "/settings", label: "Configurações", icon: Settings },
 ];
 
+function useNavItems(): NavItem[] {
+  const { user } = useAuth();
+  const items = [...navItems];
+  if (user?.role === "ADMIN") {
+    items.push(
+      { kind: "section", label: "Administração" },
+      { href: "/admin", label: "Painel", icon: Shield },
+      { href: "/admin/users", label: "Usuários", icon: Users },
+    );
+  }
+  return items;
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const items = useNavItems();
   return (
     <nav className="flex flex-col gap-1">
-      {navItems.map((item) => {
+      {items.map((item) => {
+        if (item.kind === "section") {
+          return (
+            <p
+              key={item.label}
+              className="mt-4 mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400"
+            >
+              {item.label}
+            </p>
+          );
+        }
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={item.href!}
             onClick={onNavigate}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               active
@@ -44,7 +78,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
-            <item.icon className="h-5 w-5" />
+            {item.icon && <item.icon className="h-5 w-5" />}
             {item.label}
           </Link>
         );
@@ -62,6 +96,15 @@ function AccessGate() {
     initPoint?: string;
   } | null>(null);
   const [message, setMessage] = useState("");
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>("mensal");
+
+  useEffect(() => {
+    paymentsApi
+      .plans()
+      .then((data) => setPlans(data.plans))
+      .catch(() => {});
+  }, []);
 
   const status = user?.accessStatus ?? "PAGAMENTO_PENDENTE";
 
@@ -73,18 +116,25 @@ function AccessGate() {
           description: "Seu acesso está bloqueado. Entre em contato para regularizar sua situação.",
           accent: "bg-rose-100 text-rose-600",
         }
-      : {
-          icon: Clock,
-          title: "Pagamento pendente",
-          description: "Assine o GuiaSense para liberar todas as funcionalidades.",
-          accent: "bg-amber-100 text-amber-600",
-        };
+      : status === "CANCELADO"
+        ? {
+            icon: Ban,
+            title: "Assinatura cancelada",
+            description: "Sua assinatura foi cancelada. Renove para continuar usando o GuiaSense.",
+            accent: "bg-slate-100 text-slate-600",
+          }
+        : {
+            icon: Clock,
+            title: "Pagamento pendente",
+            description: "Assine o GuiaSense para liberar todas as funcionalidades.",
+            accent: "bg-amber-100 text-amber-600",
+          };
 
   async function handleCheckout() {
     setLoading(true);
     setMessage("");
     try {
-      const result = await paymentsApi.checkout();
+      const result = await paymentsApi.checkout(selectedPlan);
       setCheckoutResult(result);
       if (result.mode === "mercadopago" && result.initPoint) {
         window.location.href = result.initPoint;
@@ -130,15 +180,57 @@ function AccessGate() {
 
           {status !== "BLOQUEADO" && (
             <div className="space-y-3">
-              <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                Plano mensal por apenas{" "}
-                <strong className="text-slate-900">R$ 19,90/mês</strong> — cancele quando quiser.
-                Acesso imediato após a confirmação do pagamento.
+              <div
+                className={`rounded-xl p-4 text-sm text-slate-600 ${
+                  status === "CANCELADO" ? "bg-slate-50" : "bg-slate-50"
+                }`}
+              >
+                <p className="font-semibold text-slate-900">
+                  {status === "CANCELADO"
+                    ? "Sua assinatura não está ativa. Escolha um plano para voltar a usar o GuiaSense."
+                    : "Escolha um plano para acessar o GuiaSense."}
+                </p>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  {plans.map((plan) => {
+                    const active = selectedPlan === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSelectedPlan(plan.id)}
+                        className={`relative rounded-xl border px-3 py-3 text-left transition-colors ${
+                          active
+                            ? "border-brand-600 bg-white ring-2 ring-brand-500/20"
+                            : plan.featured
+                              ? "border-brand-200 bg-white hover:border-brand-300"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        {plan.featured && (
+                          <span className="absolute -top-2.5 right-2 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            ⭐ Recomendado
+                          </span>
+                        )}
+                        <p className="text-sm font-bold text-slate-800">{plan.label}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{plan.tagline}</p>
+                        <p className="mt-1 text-sm font-extrabold text-brand-600">
+                          {formatBRL(plan.priceBRL)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-400">{plan.note}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <Button fullWidth size="lg" onClick={handleCheckout} loading={loading}>
                 <ShieldCheck className="h-5 w-5" />
-                Quero liberar meu acesso
+                {status === "CANCELADO"
+                  ? "Assinar novamente"
+                  : plans.find((plan) => plan.id === selectedPlan)
+                    ? `Assinar ${plans.find((plan) => plan.id === selectedPlan)?.label}`
+                    : "Quero liberar meu acesso"}
               </Button>
 
               {checkoutResult?.mode === "simulated" && (
@@ -268,17 +360,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
         <div className="grid grid-cols-4">
-          {navItems.map((item) => {
-            const active = pathname === item.href;
+          {navItems.filter((item) => item.href).map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={item.href!}
                 className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
                   active ? "text-brand-600" : "text-slate-500"
                 }`}
               >
-                <item.icon className="h-5 w-5" />
+                {item.icon && <item.icon className="h-5 w-5" />}
                 {item.label}
               </Link>
             );

@@ -23,6 +23,23 @@ router.patch("/me", async (req: AuthRequest, res) => {
       name: user.name,
       email: user.email,
       accessStatus: user.accessStatus,
+      role: user.role,
+    },
+  });
+});
+
+router.post("/cancel-subscription", async (req: AuthRequest, res) => {
+  const user = await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { accessStatus: "CANCELADO" },
+  });
+  res.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      accessStatus: user.accessStatus,
+      role: user.role,
     },
   });
 });

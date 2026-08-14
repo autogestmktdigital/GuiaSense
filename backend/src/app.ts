@@ -13,6 +13,7 @@ import alertsRoutes from "./modules/alerts/alerts.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import insightsRoutes from "./modules/insights/insights.routes";
 import paymentsRoutes from "./modules/payments/payments.routes";
+import adminRoutes from "./modules/admin/admin.routes";
 import usersRoutes from "./modules/users/users.routes";
 
 export const app = express();
@@ -39,6 +40,7 @@ app.use("/api/alerts", alertsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/insights", insightsRoutes);
 app.use("/api/payments", paymentsRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: "Rota não encontrada." });

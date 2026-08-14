@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
+    role: string;
   };
 }
 
@@ -23,7 +24,7 @@ export async function requireAuth(req: AuthRequest, _res: Response, next: NextFu
     if (!user) {
       throw new HttpError(401, "Usuário não encontrado.");
     }
-    req.user = { id: user.id, email: user.email };
+    req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (error) {
     if (error instanceof HttpError) throw error;

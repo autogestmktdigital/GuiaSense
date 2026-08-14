@@ -28,6 +28,7 @@ function publicUser(user: {
   name: string;
   email: string;
   accessStatus: string;
+  role: string;
   createdAt: Date;
 }) {
   return {
@@ -35,6 +36,7 @@ function publicUser(user: {
     name: user.name,
     email: user.email,
     accessStatus: user.accessStatus,
+    role: user.role,
     createdAt: user.createdAt,
   };
 }

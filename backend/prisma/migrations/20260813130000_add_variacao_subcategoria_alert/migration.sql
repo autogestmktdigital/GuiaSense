@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "AlertType" ADD VALUE 'VARIACAO_SUBCATEGORIA';
+
+-- AlterTable
+ALTER TABLE "Alert" ADD COLUMN     "data" JSONB;

@@ -17,6 +17,12 @@ enum AccessStatus {
   LIBERADO
   PAGAMENTO_PENDENTE
   BLOQUEADO
+  CANCELADO
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 enum TransactionType {
@@ -34,6 +40,15 @@ enum AlertType {
   FECHAMENTO_MENSAL
   ORIENTACAO_D5
   ORIENTACAO_D2
+  CONTA_ATRASADA
+  VARIACAO_SUBCATEGORIA
+  VARIACAO_CATEGORIA
+  RECEBIMENTO_ATRASADO
+}
+
+enum AlertOrigin {
+  IA
+  BACKEND
 }
 
 enum MonthClosingStatus {
@@ -96,7 +111,9 @@ model User {
   passwordHash   String
   status         UserStatus  @default(ACTIVE)
   accessStatus   AccessStatus @default(LIBERADO)
+  role           UserRole     @default(USER)
   mpCustomerId   String?
+  planExpiresAt  DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -173,8 +190,13 @@ model Alert {
   severity  AlertSeverity
   message   String
   status    AlertStatus   @default(ACTIVE)
+  origin    AlertOrigin   @default(IA)
   createdAt DateTime      @default(now())
   readAt    DateTime?
+  transactionIds Json?
+  homeDisplayUntil DateTime?
+  resolvedAt  DateTime?
+  data        Json?
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   closing   MonthClosing? @relation(fields: [closingId], references: [id], onDelete: Cascade)
@@ -185,6 +207,7 @@ model Alert {
   projectionD2Id String?               @unique
 
   @@index([userId, status])
+  @@index([userId, type, status])
 }
 
 model MonthProjection {

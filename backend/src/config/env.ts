@@ -21,5 +21,4 @@ export const env = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
   mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "",
   mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET || "",
-  planPriceBRL: Number(process.env.PLAN_PRICE_BRL || 19.9),
 };

@@ -3,9 +3,18 @@ import { PaymentStatus } from "@prisma/client";
 import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { HttpError } from "../../lib/httpError";
+import { getPlan, GRACE_DAYS, PLANS, planExpiresFor } from "./plans";
 
 function hasMpConfigured(): boolean {
   return Boolean(env.mercadopagoAccessToken);
+}
+
+export function planGraceDays(): number {
+  return GRACE_DAYS;
+}
+
+export function listPlans() {
+  return PLANS;
 }
 
 export async function getStatus(userId: string) {
@@ -23,23 +32,38 @@ export async function getStatus(userId: string) {
     accessStatus: user.accessStatus,
     paymentStatus: lastPayment?.status ?? null,
     lastPayment,
+    planExpiresAt: user.planExpiresAt,
   };
 }
 
-export async function createCheckout(userId: string) {
+export async function expireOverduePlans(): Promise<number> {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - GRACE_DAYS * 24 * 60 * 60 * 1000);
+  const result = await prisma.user.updateMany({
+    where: {
+      accessStatus: "LIBERADO",
+      planExpiresAt: { not: null, lt: cutoff },
+    },
+    data: { accessStatus: "PAGAMENTO_PENDENTE" },
+  });
+  return result.count;
+}
+
+export async function createCheckout(userId: string, planId?: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new HttpError(404, "Usuário não encontrado.");
   }
 
-  const amountBRL = env.planPriceBRL;
+  const plan = getPlan(planId);
+  const amountBRL = plan.priceBRL;
 
   const payment = await prisma.payment.create({
     data: {
       userId,
       status: PaymentStatus.PENDING,
       amountBRL,
-      plan: "mensal",
+      plan: plan.id,
     },
   });
 
@@ -56,7 +80,7 @@ export async function createCheckout(userId: string) {
     {
       items: [
         {
-          title: "GuiaSense - Plano Mensal",
+          title: `GuiaSense - Plano ${plan.label}`,
           quantity: 1,
           unit_price: amountBRL,
           currency_id: "BRL",
@@ -91,14 +115,19 @@ export async function createCheckout(userId: string) {
 async function applyPaymentApproval(payment: {
   id: string;
   userId: string;
+  plan: string;
 }) {
+  const plan = getPlan(payment.plan);
   await prisma.payment.update({
     where: { id: payment.id },
     data: { status: PaymentStatus.APPROVED },
   });
   await prisma.user.update({
     where: { id: payment.userId },
-    data: { accessStatus: "LIBERADO" },
+    data: {
+      accessStatus: "LIBERADO",
+      planExpiresAt: planExpiresFor(plan),
+    },
   });
 
   return { ok: true };

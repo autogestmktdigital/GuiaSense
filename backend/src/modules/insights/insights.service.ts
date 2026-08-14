@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { TransactionType } from "@prisma/client";
 import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
+import { planGraceDays } from "../payments/payments.service";
 
 const cache = new Map<string, { at: number; insights: Insight[] }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -102,6 +103,31 @@ function deterministicInsights(summary: Awaited<ReturnType<typeof buildSummary>>
   return insights.slice(0, 3);
 }
 
+async function subscriptionDueInsight(userId: string): Promise<Insight | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { accessStatus: true, planExpiresAt: true },
+  });
+  if (!user || user.accessStatus !== "LIBERADO" || !user.planExpiresAt) {
+    return null;
+  }
+
+  const now = Date.now();
+  const expiresAt = user.planExpiresAt.getTime();
+  if (expiresAt >= now) return null;
+
+  const graceDays = planGraceDays();
+  const daysOverdue = Math.floor((now - expiresAt) / (24 * 60 * 60 * 1000));
+  const daysLeft = graceDays - daysOverdue;
+  if (daysLeft <= 0) return null;
+
+  return {
+    title: "Mensalidade vencida",
+    message: `Sua mensalidade venceu em ${user.planExpiresAt.toLocaleDateString("pt-BR")}, mas seu acesso ao GuiaSense continua disponível. Você tem mais ${daysLeft} ${daysLeft === 1 ? "dia" : "dias"} para regularizar o pagamento.`,
+    tone: "attention",
+  };
+}
+
 export async function getInsights(userId: string): Promise<Insight[]> {
   const month = currentYearMonth();
   const cacheKey = `${userId}:${month}`;
@@ -149,6 +175,12 @@ Regras:
       console.error("[insights] OpenAI falhou, usando fallback", error);
       insights = deterministicInsights(summary);
     }
+  }
+
+  const subscriptionInsight = await subscriptionDueInsight(userId);
+  if (subscriptionInsight) {
+    insights.unshift(subscriptionInsight);
+    insights = insights.slice(0, 4);
   }
 
   cache.set(cacheKey, { at: Date.now(), insights });

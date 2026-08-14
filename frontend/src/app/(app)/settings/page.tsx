@@ -9,14 +9,23 @@ import {
   CheckCircle2,
   CreditCard,
   Save,
+  UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/auth-context";
-import { paymentsApi, usersApi } from "@/lib/api";
-import { formatBRL } from "@/lib/format";
+import { paymentsApi, usersApi, Plan, PlanId } from "@/lib/api";
+import { formatBRL, formatDateShort } from "@/lib/format";
+
+const paymentStatusLabel: Record<string, string> = {
+  PENDING: "Pendente",
+  APPROVED: "Aprovado",
+  REJECTED: "Recusado",
+  CANCELLED: "Cancelado",
+  EXPIRED: "Expirado",
+};
 
 const accessBadge: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   LIBERADO: {
@@ -34,30 +43,94 @@ const accessBadge: Record<string, { label: string; className: string; icon: Reac
     className: "bg-rose-50 text-rose-700 border-rose-200",
     icon: <Ban className="h-4 w-4" />,
   },
+  CANCELADO: {
+    label: "Assinatura cancelada",
+    className: "bg-slate-100 text-slate-600 border-slate-200",
+    icon: <UserX className="h-4 w-4" />,
+  },
 };
+
+function PlanPicker({
+  plans,
+  value,
+  onChange,
+}: {
+  plans: Plan[];
+  value: PlanId;
+  onChange: (plan: PlanId) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      {plans.map((plan) => {
+        const active = value === plan.id;
+        return (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => onChange(plan.id)}
+            className={`relative rounded-xl border px-3 py-3 text-left transition-colors ${
+              active
+                ? "border-brand-600 bg-white ring-2 ring-brand-500/20"
+                : plan.featured
+                  ? "border-brand-200 bg-white hover:border-brand-300"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+            }`}
+          >
+            {plan.featured && (
+              <span className="absolute -top-2.5 right-2 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                ⭐ Recomendado
+              </span>
+            )}
+            <p className="text-sm font-bold text-slate-800">{plan.label}</p>
+            <p className="mt-0.5 text-xs text-slate-500">{plan.tagline}</p>
+            <p className="mt-1 text-sm font-extrabold text-brand-600">{formatBRL(plan.priceBRL)}</p>
+            <p className="mt-0.5 text-xs text-slate-400">{plan.note}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
   const [name, setName] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [lastAmount, setLastAmount] = useState<number | null>(null);
+  const [lastPlan, setLastPlan] = useState<string | null>(null);
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>("mensal");
   const [savingName, setSavingName] = useState(false);
   const [nameMessage, setNameMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
+  const [cancelConfirming, setCancelConfirming] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState("");
   const [loading, setLoading] = useState(true);
+
+  async function refreshPaymentStatus() {
+    const status = await paymentsApi.status();
+    setPaymentStatus(status.paymentStatus);
+    setPlanExpiresAt(status.planExpiresAt);
+    if (status.lastPayment) {
+      setLastAmount(Number(status.lastPayment.amountBRL));
+      setLastPlan(status.lastPayment.plan);
+    }
+  }
 
   useEffect(() => {
     if (user) setName(user.name);
     paymentsApi
-      .status()
-      .then((status) => {
-        setPaymentStatus(status.paymentStatus);
-        if (status.lastPayment) {
-          setLastAmount(Number(status.lastPayment.amountBRL));
-        }
+      .plans()
+      .then((data) => {
+        setPlans(data.plans);
+        setSelectedPlan(data.plans[0]?.id ?? "mensal");
       })
+      .catch(() => {});
+    refreshPaymentStatus()
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
@@ -65,6 +138,17 @@ export default function SettingsPage() {
   if (loading) return <PageLoader />;
 
   const badge = accessBadge[user?.accessStatus ?? "PAGAMENTO_PENDENTE"];
+
+  const planExpires = planExpiresAt ? new Date(planExpiresAt) : null;
+  const planOverdue = Boolean(
+    user &&
+      user.accessStatus === "LIBERADO" &&
+      planExpires &&
+      planExpires.getTime() < Date.now(),
+  );
+  const graceDaysLeft = planOverdue && planExpires
+    ? Math.max(0, 10 - Math.floor((Date.now() - planExpires.getTime()) / 86400000))
+    : null;
 
   async function handleSaveName(event: React.FormEvent) {
     event.preventDefault();
@@ -85,7 +169,7 @@ export default function SettingsPage() {
     setCheckoutMessage("");
     setCheckoutLoading(true);
     try {
-      const result = await paymentsApi.checkout();
+      const result = await paymentsApi.checkout(selectedPlan);
       setCheckoutPaymentId(result.paymentId);
       if (result.mode === "mercadopago" && result.initPoint) {
         window.location.href = result.initPoint;
@@ -106,11 +190,26 @@ export default function SettingsPage() {
     try {
       await paymentsApi.simulate(checkoutPaymentId);
       setCheckoutMessage("Pagamento confirmado! Seu acesso foi liberado.");
+      await refreshPaymentStatus();
       await refreshUser();
     } catch (error) {
       setCheckoutMessage(error instanceof Error ? error.message : "Não foi possível confirmar.");
     } finally {
       setCheckoutLoading(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    setCancelMessage("");
+    setCancelLoading(true);
+    try {
+      await usersApi.cancelSubscription();
+      await refreshUser();
+      setCancelMessage("Sua assinatura foi cancelada com sucesso.");
+    } catch (error) {
+      setCancelMessage(error instanceof Error ? error.message : "Não foi possível cancelar.");
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -158,31 +257,83 @@ export default function SettingsPage() {
             </span>
             {paymentStatus && (
               <span className="text-sm text-slate-500">
-                Status do último pagamento: <strong className="text-slate-700">{paymentStatus}</strong>
+                Status do último pagamento:{" "}
+                <strong className="text-slate-700">
+                  {paymentStatusLabel[paymentStatus] ?? paymentStatus}
+                </strong>
               </span>
             )}
             {lastAmount !== null && (
               <span className="text-sm text-slate-500">
-                Plano mensal · {formatBRL(lastAmount)}/mês
+                Plano{" "}
+                {plans.find((plan) => plan.id === lastPlan)?.label ??
+                  (lastPlan ? lastPlan.charAt(0).toUpperCase() + lastPlan.slice(1) : "Mensal")}{" "}
+                · {formatBRL(lastAmount)}
+                {lastPlan === "mensal" && "/mês"}
+              </span>
+            )}
+            {user?.accessStatus === "LIBERADO" && planExpiresAt && (
+              <span
+                className={`text-sm ${planOverdue ? "font-semibold text-amber-600" : "text-slate-500"}`}
+              >
+                {planOverdue ? "Venceu em" : "Válido até"}{" "}
+                <strong className="text-slate-700">{formatDateShort(planExpiresAt)}</strong>
               </span>
             )}
           </div>
 
+          {planOverdue && (
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+              <p className="text-sm text-amber-800">
+                Sua mensalidade venceu em {formatDateShort(planExpiresAt!)}, mas seu acesso ao
+                GuiaSense continua disponível por 10 dias após o vencimento
+                {graceDaysLeft !== null && graceDaysLeft > 0 && (
+                  <> — você tem mais {graceDaysLeft} {graceDaysLeft === 1 ? "dia" : "dias"} para regularizar o pagamento.</>
+                )}
+                .
+              </p>
+              <div className="mt-3 space-y-3">
+                <PlanPicker plans={plans} value={selectedPlan} onChange={setSelectedPlan} />
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleCheckout} loading={checkoutLoading}>
+                    <CreditCard className="h-4 w-4" /> Regularizar com plano{" "}
+                    {plans.find((plan) => plan.id === selectedPlan)?.label?.toLowerCase() ?? "selecionado"}
+                  </Button>
+                  {checkoutPaymentId && (
+                    <Button variant="success" onClick={handleSimulate} loading={checkoutLoading}>
+                      <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento (teste)
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {checkoutMessage && (
+                <p className="mt-2 text-sm font-medium text-emerald-700">{checkoutMessage}</p>
+              )}
+            </div>
+          )}
+
           {user?.accessStatus !== "LIBERADO" && (
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
-                Seu acesso está {user?.accessStatus === "BLOQUEADO" ? "bloqueado" : "pendente de pagamento"}.
+                {user?.accessStatus === "CANCELADO"
+                  ? "Sua assinatura foi cancelada. Ao assinar novamente, o acesso é liberado."
+                  : user?.accessStatus === "BLOQUEADO"
+                    ? "Seu acesso está bloqueado."
+                    : "Seu acesso está pendente de pagamento."}{" "}
                 Ao confirmar o pagamento, o acesso é liberado automaticamente.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button onClick={handleCheckout} loading={checkoutLoading}>
-                  <CreditCard className="h-4 w-4" /> Assinar agora
-                </Button>
-                {checkoutPaymentId && (
-                  <Button variant="success" onClick={handleSimulate} loading={checkoutLoading}>
-                    <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento (teste)
+              <div className="mt-3 space-y-3">
+                <PlanPicker plans={plans} value={selectedPlan} onChange={setSelectedPlan} />
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleCheckout} loading={checkoutLoading}>
+                    <CreditCard className="h-4 w-4" /> Assinar agora
                   </Button>
-                )}
+                  {checkoutPaymentId && (
+                    <Button variant="success" onClick={handleSimulate} loading={checkoutLoading}>
+                      <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento (teste)
+                    </Button>
+                  )}
+                </div>
               </div>
               {checkoutMessage && (
                 <p className="mt-2 text-sm font-medium text-emerald-700">{checkoutMessage}</p>
@@ -204,6 +355,42 @@ export default function SettingsPage() {
         <Button variant="danger" onClick={logout}>
           <LogOut className="h-4 w-4" /> Sair
         </Button>
+      </Card>
+
+      <Card className="border-rose-100">
+        <CardHeader
+          title="Cancelar assinatura"
+          subtitle="Encerra seu acesso ao GuiaSense."
+        />
+        <div className="space-y-3">
+          {!cancelConfirming ? (
+            <Button variant="danger" onClick={() => setCancelConfirming(true)}>
+              <UserX className="h-4 w-4" /> Cancelar minha assinatura
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600">
+                Tem certeza? Isso cancelará sua assinatura e você perderá o acesso ao GuiaSense.
+                Você poderá assinar novamente quando quiser.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="danger" onClick={handleCancelSubscription} loading={cancelLoading}>
+                  <UserX className="h-4 w-4" /> Sim, cancelar assinatura
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setCancelConfirming(false)}
+                  disabled={cancelLoading}
+                >
+                  Voltar
+                </Button>
+              </div>
+            </div>
+          )}
+          {cancelMessage && (
+            <p className="text-sm font-medium text-emerald-600">{cancelMessage}</p>
+          )}
+        </div>
       </Card>
     </div>
   );

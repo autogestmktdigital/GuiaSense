@@ -4,13 +4,18 @@ import * as paymentsService from "./payments.service";
 
 const router = Router();
 
+router.get("/plans", (_req, res) => {
+  res.json({ plans: paymentsService.listPlans() });
+});
+
 router.get("/status", requireAuth, async (req: AuthRequest, res) => {
   const status = await paymentsService.getStatus(req.user!.id);
   res.json(status);
 });
 
 router.post("/checkout", requireAuth, async (req: AuthRequest, res) => {
-  const checkout = await paymentsService.createCheckout(req.user!.id);
+  const plan = (req.body as { plan?: string }).plan;
+  const checkout = await paymentsService.createCheckout(req.user!.id, plan);
   res.json(checkout);
 });
 

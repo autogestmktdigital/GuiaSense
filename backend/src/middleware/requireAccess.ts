@@ -17,7 +17,9 @@ export async function requireAccess(req: AuthRequest, _res: Response, next: Next
     const message =
       user.accessStatus === "BLOQUEADO"
         ? "Acesso bloqueado. Entre em contato para regularizar seu acesso."
-        : "Pagamento pendente. Libere seu acesso para continuar.";
+        : user.accessStatus === "CANCELADO"
+          ? "Sua assinatura foi cancelada. Renove para continuar usando o GuiaSense."
+          : "Pagamento pendente. Libere seu acesso para continuar.";
     throw new HttpError(403, message);
   }
 
