@@ -29,6 +29,7 @@ function publicUser(user: {
   email: string;
   accessStatus: string;
   role: string;
+  hasSeenWelcome: boolean;
   createdAt: Date;
 }) {
   return {
@@ -37,6 +38,7 @@ function publicUser(user: {
     email: user.email,
     accessStatus: user.accessStatus,
     role: user.role,
+    hasSeenWelcome: user.hasSeenWelcome,
     createdAt: user.createdAt,
   };
 }

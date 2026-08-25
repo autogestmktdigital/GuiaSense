@@ -24,6 +24,7 @@ router.patch("/me", async (req: AuthRequest, res) => {
       email: user.email,
       accessStatus: user.accessStatus,
       role: user.role,
+      hasSeenWelcome: user.hasSeenWelcome,
     },
   });
 });
@@ -40,6 +41,20 @@ router.post("/cancel-subscription", async (req: AuthRequest, res) => {
       email: user.email,
       accessStatus: user.accessStatus,
       role: user.role,
+      hasSeenWelcome: user.hasSeenWelcome,
+    },
+  });
+});
+
+router.patch("/welcome", async (req: AuthRequest, res) => {
+  const user = await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { hasSeenWelcome: true },
+  });
+  res.json({
+    user: {
+      id: user.id,
+      hasSeenWelcome: user.hasSeenWelcome,
     },
   });
 });

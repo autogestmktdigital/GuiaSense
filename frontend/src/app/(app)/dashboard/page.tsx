@@ -20,7 +20,8 @@ import { TransactionForm } from "@/components/transaction-form";
 import { MonthlyEvolution } from "@/components/monthly-evolution";
 import { TopExpenses } from "@/components/top-expenses";
 import { UpcomingPayments } from "@/components/upcoming-payments";
-import { dashboardApi, insightsApi, Overview, Insight } from "@/lib/api";
+import { dashboardApi, insightsApi, usersApi, Overview, Insight } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { formatBRL, formatDateShort, monthLabel } from "@/lib/format";
 
 function StatCard({
@@ -77,11 +78,13 @@ function InsightCard({ insight, expanded = false }: { insight: Insight; expanded
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, refreshUser } = useAuth();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   async function load() {
     try {
@@ -109,6 +112,16 @@ export default function DashboardPage() {
     setRefreshKey((key) => key + 1);
   }
 
+  async function handleDismissWelcome() {
+    try {
+      await usersApi.dismissWelcome();
+      setWelcomeDismissed(true);
+      refreshUser();
+    } catch {
+      setWelcomeDismissed(true);
+    }
+  }
+
   if (loading) return <PageLoader />;
   if (!overview) return null;
 
@@ -129,6 +142,25 @@ export default function DashboardPage() {
           Nova movimentação
         </Button>
       </div>
+
+      {user && !user.hasSeenWelcome && !welcomeDismissed && (
+        <Card className="border-brand-100 bg-brand-50/60">
+          <div className="flex items-start justify-between gap-3 p-5">
+            <div>
+              <p className="text-sm font-bold text-slate-900">Bem-vindo ao GuiaSense! 👋</p>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                A partir de agora, você tem um jeito simples de acompanhar suas finanças e entender melhor para onde seu dinheiro está indo. Cadastre suas movimentações e deixe o GuiaSense ajudar você ao longo do caminho.
+              </p>
+            </div>
+            <button
+              onClick={handleDismissWelcome}
+              className="shrink-0 text-xs font-semibold text-brand-600 hover:underline"
+            >
+              Entendi
+            </button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard

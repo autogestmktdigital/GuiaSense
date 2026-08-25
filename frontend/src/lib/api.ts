@@ -65,6 +65,7 @@ export type PublicUser = {
   email: string;
   accessStatus: "LIBERADO" | "PAGAMENTO_PENDENTE" | "BLOQUEADO" | "CANCELADO";
   role?: "USER" | "ADMIN";
+  hasSeenWelcome: boolean;
   createdAt: string;
 };
 
@@ -160,6 +161,8 @@ export const usersApi = {
     apiFetch<{ user: PublicUser }>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   cancelSubscription: () =>
     apiFetch<{ user: PublicUser }>("/users/cancel-subscription", { method: "POST" }),
+  dismissWelcome: () =>
+    apiFetch<{ user: { id: string; hasSeenWelcome: boolean } }>("/users/welcome", { method: "PATCH" }),
 };
 
 export type AdminOverview = {
