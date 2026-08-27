@@ -217,6 +217,14 @@ export default function HomePage() {
             © {new Date().getFullYear()} GuiaSense. Seu guia financeiro.
           </p>
         </div>
+        <div className="mt-3 text-center">
+          <a
+            href="/privacidade"
+            className="text-xs text-slate-400 underline-offset-4 hover:text-slate-600 hover:underline"
+          >
+            Política de Privacidade
+          </a>
+        </div>
       </footer>
     </div>
   );

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, AuthRequest } from "../../middleware/auth";
 import { prisma } from "../../lib/prisma";
+import { encryptField, decryptField } from "../../lib/crypto";
 
 const router = Router();
 
@@ -39,6 +40,8 @@ function publicUserFields(user: {
   billingDistrict: string | null;
   billingCity: string | null;
   billingState: string | null;
+  consentAt: Date | null;
+  consentVersion: string | null;
 }) {
   return {
     id: user.id,
@@ -48,7 +51,7 @@ function publicUserFields(user: {
     role: user.role,
     hasSeenWelcome: user.hasSeenWelcome,
     trialExpiresAt: user.trialExpiresAt,
-    cpfCnpj: user.cpfCnpj,
+    cpfCnpj: decryptField(user.cpfCnpj),
     billingZip: user.billingZip,
     billingStreet: user.billingStreet,
     billingNumber: user.billingNumber,
@@ -56,6 +59,8 @@ function publicUserFields(user: {
     billingDistrict: user.billingDistrict,
     billingCity: user.billingCity,
     billingState: user.billingState,
+    consentAt: user.consentAt,
+    consentVersion: user.consentVersion,
   };
 }
 
@@ -75,7 +80,7 @@ router.patch("/billing", async (req: AuthRequest, res) => {
   const user = await prisma.user.update({
     where: { id: req.user!.id },
     data: {
-      cpfCnpj: data.cpfCnpj,
+      cpfCnpj: data.cpfCnpj ? encryptField(data.cpfCnpj) : undefined,
       billingZip: data.billingZip,
       billingStreet: data.billingStreet,
       billingNumber: data.billingNumber,

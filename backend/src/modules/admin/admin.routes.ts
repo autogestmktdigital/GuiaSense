@@ -10,6 +10,7 @@ import {
   getUserDetail,
   setUserRole,
   grantAccessBonus,
+  anonymizeUserForLgpd,
   paymentStatusLabel,
   accessStatusLabel,
 } from "./admin.service";
@@ -66,6 +67,11 @@ router.post("/users/:userId/bonus", async (req: AuthRequest, res) => {
   const days = Number(req.body?.days ?? 0);
   const user = await grantAccessBonus(req.params.userId, days);
   res.json({ user });
+});
+
+router.post("/users/:userId/anonymize", async (req: AuthRequest, res) => {
+  const result = await anonymizeUserForLgpd(req.params.userId);
+  res.json({ ok: true, id: result.id });
 });
 
 router.post("/payments/reconcile", async (req: AuthRequest, res) => {

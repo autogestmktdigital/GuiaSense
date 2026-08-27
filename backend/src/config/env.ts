@@ -23,4 +23,5 @@ export const env = {
   mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "",
   mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET || "",
   adminPromotionCode: process.env.ADMIN_PROMOTION_CODE || "",
+  dataEncryptionKey: process.env.DATA_ENCRYPTION_KEY || required("DATA_ENCRYPTION_KEY"),
 };

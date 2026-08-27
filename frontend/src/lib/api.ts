@@ -75,6 +75,8 @@ export type PublicUser = {
   billingDistrict?: string | null;
   billingCity?: string | null;
   billingState?: string | null;
+  consentAt?: string | null;
+  consentVersion?: string | null;
   createdAt: string;
 };
 
@@ -169,7 +171,13 @@ export type Overview = {
 };
 
 export const authApi = {
-  register: (body: { name: string; email: string; password: string; cpfCnpj: string }) =>
+  register: (body: {
+    name: string;
+    email: string;
+    password: string;
+    cpfCnpj: string;
+    consent: boolean;
+  }) =>
     apiFetch<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     apiFetch<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(body) }),

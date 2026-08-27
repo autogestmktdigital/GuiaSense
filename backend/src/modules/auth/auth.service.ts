@@ -4,6 +4,7 @@ import { z } from "zod";
 import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { HttpError } from "../../lib/httpError";
+import { encryptField, decryptField } from "../../lib/crypto";
 import { seedDefaultCategories } from "../../utils/seedCategories";
 import { TRIAL_DAYS } from "../payments/plans";
 
@@ -14,6 +15,9 @@ const registerSchema = z.object({
   cpfCnpj: z
     .string()
     .regex(/^\d{11}$|^\d{14}$/, "Informe um CPF ou CNPJ válido (somente números)."),
+  consent: z.literal(true, {
+    errorMap: () => ({ message: "Para criar a conta, você precisa aceitar a Política de Privacidade." }),
+  }),
 });
 
 const loginSchema = z.object({
@@ -43,6 +47,8 @@ function publicUser(user: {
   billingDistrict: string | null;
   billingCity: string | null;
   billingState: string | null;
+  consentAt: Date | null;
+  consentVersion: string | null;
   createdAt: Date;
 }) {
   return {
@@ -53,7 +59,7 @@ function publicUser(user: {
     role: user.role,
     hasSeenWelcome: user.hasSeenWelcome,
     trialExpiresAt: user.trialExpiresAt,
-    cpfCnpj: user.cpfCnpj,
+    cpfCnpj: decryptField(user.cpfCnpj),
     billingZip: user.billingZip,
     billingStreet: user.billingStreet,
     billingNumber: user.billingNumber,
@@ -61,6 +67,8 @@ function publicUser(user: {
     billingDistrict: user.billingDistrict,
     billingCity: user.billingCity,
     billingState: user.billingState,
+    consentAt: user.consentAt,
+    consentVersion: user.consentVersion,
     createdAt: user.createdAt,
   };
 }
@@ -80,7 +88,9 @@ export async function register(input: unknown) {
       passwordHash,
       accessStatus: "LIBERADO",
       trialExpiresAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
-      cpfCnpj: data.cpfCnpj,
+      cpfCnpj: encryptField(data.cpfCnpj),
+      consentAt: new Date(),
+      consentVersion: "2026-08-27",
     },
   });
 

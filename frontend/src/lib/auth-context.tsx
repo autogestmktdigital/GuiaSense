@@ -13,7 +13,7 @@ type AuthContextType = {
   user: PublicUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<PublicUser>;
-  register: (name: string, email: string, password: string, cpfCnpj: string) => Promise<PublicUser>;
+  register: (name: string, email: string, password: string, cpfCnpj: string, consent: boolean) => Promise<PublicUser>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 };
@@ -47,8 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (name: string, email: string, password: string, cpfCnpj: string) => {
-      const result = await authApi.register({ name, email, password, cpfCnpj });
+    async (name: string, email: string, password: string, cpfCnpj: string, consent: boolean) => {
+      const result = await authApi.register({ name, email, password, cpfCnpj, consent });
       setToken(result.token);
       setUser(result.user);
       return result.user;

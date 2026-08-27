@@ -1,5 +1,31 @@
 import { prisma } from "../../lib/prisma";
 
+export async function anonymizeUserForLgpd(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+  const rand = Math.random().toString(36).slice(2, 10);
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      name: "Usuário(a) removido(a)",
+      email: `anonymized-${rand}@removed.guiasense`,
+      passwordHash: rand,
+      cpfCnpj: null,
+      billingZip: null,
+      billingStreet: null,
+      billingNumber: null,
+      billingComplement: null,
+      billingDistrict: null,
+      billingCity: null,
+      billingState: null,
+      accessStatus: "CANCELADO",
+    },
+    select: { id: true },
+  });
+}
+
 export async function getOverview() {
   const [
     totalUsers,
