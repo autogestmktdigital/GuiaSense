@@ -171,13 +171,7 @@ export type Overview = {
 };
 
 export const authApi = {
-  register: (body: {
-    name: string;
-    email: string;
-    password: string;
-    cpfCnpj: string;
-    consent: boolean;
-  }) =>
+  register: (body: { name: string; email: string; password: string; consent: boolean }) =>
     apiFetch<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     apiFetch<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(body) }),

@@ -8,13 +8,12 @@ import { encryptField, decryptField } from "../../lib/crypto";
 import { seedDefaultCategories } from "../../utils/seedCategories";
 import { TRIAL_DAYS } from "../payments/plans";
 
+export const PRIVACY_POLICY_VERSION = "2026-08-27";
+
 const registerSchema = z.object({
   name: z.string().min(2, "Informe seu nome.").max(80),
   email: z.string().email("Informe um e-mail válido."),
   password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres."),
-  cpfCnpj: z
-    .string()
-    .regex(/^\d{11}$|^\d{14}$/, "Informe um CPF ou CNPJ válido (somente números)."),
   consent: z.literal(true, {
     errorMap: () => ({ message: "Para criar a conta, você precisa aceitar a Política de Privacidade." }),
   }),
@@ -88,9 +87,8 @@ export async function register(input: unknown) {
       passwordHash,
       accessStatus: "LIBERADO",
       trialExpiresAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
-      cpfCnpj: encryptField(data.cpfCnpj),
       consentAt: new Date(),
-      consentVersion: "2026-08-27",
+      consentVersion: PRIVACY_POLICY_VERSION,
     },
   });
 
