@@ -212,6 +212,9 @@ export default function HomePage() {
             © {new Date().getFullYear()} GuiaSense. Seu guia financeiro.
           </p>
         </div>
+        <p className="mx-auto mt-4 w-full max-w-6xl px-4 text-center text-xs text-slate-400 sm:px-6">
+          DevCerto Tecnologia LTDA - CNPJ: 68.827.410/0001-44
+        </p>
       </footer>
     </div>
   );
