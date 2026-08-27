@@ -10,10 +10,12 @@ import {
   CreditCard,
   Save,
   UserX,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { PageLoader } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/auth-context";
 import { paymentsApi, usersApi, Plan, PlanId } from "@/lib/api";
@@ -110,6 +112,18 @@ export default function SettingsPage() {
   const [cancelConfirming, setCancelConfirming] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelMessage, setCancelMessage] = useState("");
+  const [showBilling, setShowBilling] = useState(false);
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingError, setBillingError] = useState("");
+  const [billing, setBilling] = useState({
+    billingZip: "",
+    billingStreet: "",
+    billingNumber: "",
+    billingComplement: "",
+    billingDistrict: "",
+    billingCity: "",
+    billingState: "",
+  });
   const [loading, setLoading] = useState(true);
 
   async function refreshPaymentStatus() {
@@ -155,22 +169,30 @@ export default function SettingsPage() {
     ? Math.max(0, 10 - Math.floor((Date.now() - planExpires.getTime()) / 86400000))
     : null;
 
-  async function handleSaveName(event: React.FormEvent) {
-    event.preventDefault();
-    setNameMessage("");
-    setSavingName(true);
-    try {
-      await usersApi.update({ name: name.trim() });
-      await refreshUser();
-      setNameMessage("Nome atualizado com sucesso.");
-    } catch (error) {
-      setNameMessage(error instanceof Error ? error.message : "Não foi possível atualizar.");
-    } finally {
-      setSavingName(false);
-    }
+  const billingComplete = Boolean(
+    user?.billingZip &&
+      user.billingStreet &&
+      user.billingNumber &&
+      user.billingDistrict &&
+      user.billingCity &&
+      user.billingState,
+  );
+
+  function openBillingForm() {
+    setBillingError("");
+    setBilling({
+      billingZip: user?.billingZip ?? "",
+      billingStreet: user?.billingStreet ?? "",
+      billingNumber: user?.billingNumber ?? "",
+      billingComplement: user?.billingComplement ?? "",
+      billingDistrict: user?.billingDistrict ?? "",
+      billingCity: user?.billingCity ?? "",
+      billingState: user?.billingState ?? "",
+    });
+    setShowBilling(true);
   }
 
-  async function handleCheckout() {
+  async function proceedCheckout() {
     setCheckoutMessage("");
     setCheckoutLoading(true);
     try {
@@ -185,6 +207,58 @@ export default function SettingsPage() {
       setCheckoutMessage(error instanceof Error ? error.message : "Não foi possível gerar o pagamento.");
     } finally {
       setCheckoutLoading(false);
+    }
+  }
+
+  async function handleCheckout() {
+    if (!billingComplete) {
+      openBillingForm();
+      return;
+    }
+    await proceedCheckout();
+  }
+
+  async function handleBillingSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setBillingError("");
+    if (!billing.billingZip || !billing.billingStreet || !billing.billingNumber ||
+        !billing.billingDistrict || !billing.billingCity || !billing.billingState) {
+      setBillingError("Preencha todos os campos do endereço.");
+      return;
+    }
+    setBillingSaving(true);
+    try {
+      await usersApi.updateBilling({
+        billingZip: billing.billingZip,
+        billingStreet: billing.billingStreet,
+        billingNumber: billing.billingNumber,
+        billingComplement: billing.billingComplement || undefined,
+        billingDistrict: billing.billingDistrict,
+        billingCity: billing.billingCity,
+        billingState: billing.billingState.toUpperCase(),
+      });
+      await refreshUser();
+      setShowBilling(false);
+      await proceedCheckout();
+    } catch (error) {
+      setBillingError(error instanceof Error ? error.message : "Não foi possível salvar o endereço.");
+    } finally {
+      setBillingSaving(false);
+    }
+  }
+
+  async function handleSaveName(event: React.FormEvent) {
+    event.preventDefault();
+    setNameMessage("");
+    setSavingName(true);
+    try {
+      await usersApi.update({ name: name.trim() });
+      await refreshUser();
+      setNameMessage("Nome atualizado com sucesso.");
+    } catch (error) {
+      setNameMessage(error instanceof Error ? error.message : "Não foi possível atualizar.");
+    } finally {
+      setSavingName(false);
     }
   }
 
@@ -432,6 +506,102 @@ export default function SettingsPage() {
           )}
         </div>
       </Card>
+
+      <Modal open={showBilling} onClose={() => setShowBilling(false)} title="Dados para a nota fiscal">
+        <form onSubmit={handleBillingSubmit} className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Para emitir a nota fiscal da sua assinatura, precisamos do seu endereço de cobrança.
+          </p>
+          <Field label="CEP" htmlFor="billingZip">
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                id="billingZip"
+                required
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="00000-000"
+                className="pl-10"
+                value={billing.billingZip}
+                onChange={(e) =>
+                  setBilling({ ...billing, billingZip: e.target.value.replace(/\D/g, "").slice(0, 8) })
+                }
+              />
+            </div>
+          </Field>
+          <Field label="Logradouro" htmlFor="billingStreet">
+            <Input
+              id="billingStreet"
+              required
+              autoComplete="street-address"
+              placeholder="Rua, avenida..."
+              value={billing.billingStreet}
+              onChange={(e) => setBilling({ ...billing, billingStreet: e.target.value })}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Número" htmlFor="billingNumber">
+              <Input
+                id="billingNumber"
+                required
+                placeholder="123"
+                value={billing.billingNumber}
+                onChange={(e) => setBilling({ ...billing, billingNumber: e.target.value })}
+              />
+            </Field>
+            <Field label="Complemento (opcional)" htmlFor="billingComplement">
+              <Input
+                id="billingComplement"
+                placeholder="Apto, bloco..."
+                value={billing.billingComplement}
+                onChange={(e) => setBilling({ ...billing, billingComplement: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Field label="Bairro" htmlFor="billingDistrict">
+            <Input
+              id="billingDistrict"
+              required
+              placeholder="Centro"
+              value={billing.billingDistrict}
+              onChange={(e) => setBilling({ ...billing, billingDistrict: e.target.value })}
+            />
+          </Field>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <Field label="Cidade" htmlFor="billingCity">
+                <Input
+                  id="billingCity"
+                  required
+                  placeholder="São Paulo"
+                  value={billing.billingCity}
+                  onChange={(e) => setBilling({ ...billing, billingCity: e.target.value })}
+                />
+              </Field>
+            </div>
+            <Field label="UF" htmlFor="billingState">
+              <Input
+                id="billingState"
+                required
+                maxLength={2}
+                placeholder="SP"
+                value={billing.billingState}
+                onChange={(e) =>
+                  setBilling({ ...billing, billingState: e.target.value.toUpperCase() })
+                }
+              />
+            </Field>
+          </div>
+          {billingError && (
+            <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">
+              {billingError}
+            </p>
+          )}
+          <Button type="submit" fullWidth loading={billingSaving}>
+            <Save className="h-4 w-4" /> Salvar e continuar
+          </Button>
+        </form>
+      </Modal>
     </div>
   );
 }

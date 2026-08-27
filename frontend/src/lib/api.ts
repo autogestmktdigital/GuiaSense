@@ -67,7 +67,25 @@ export type PublicUser = {
   role?: "USER" | "ADMIN";
   hasSeenWelcome: boolean;
   trialExpiresAt: string | null;
+  cpfCnpj?: string | null;
+  billingZip?: string | null;
+  billingStreet?: string | null;
+  billingNumber?: string | null;
+  billingComplement?: string | null;
+  billingDistrict?: string | null;
+  billingCity?: string | null;
+  billingState?: string | null;
   createdAt: string;
+};
+
+export type BillingData = {
+  billingZip: string;
+  billingStreet: string;
+  billingNumber: string;
+  billingComplement?: string;
+  billingDistrict: string;
+  billingCity: string;
+  billingState: string;
 };
 
 export type TransactionType = "INCOME" | "EXPENSE";
@@ -150,7 +168,7 @@ export type Overview = {
 };
 
 export const authApi = {
-  register: (body: { name: string; email: string; password: string }) =>
+  register: (body: { name: string; email: string; password: string; cpfCnpj: string }) =>
     apiFetch<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     apiFetch<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
@@ -160,6 +178,8 @@ export const authApi = {
 export const usersApi = {
   update: (body: { name: string }) =>
     apiFetch<{ user: PublicUser }>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
+  updateBilling: (body: BillingData) =>
+    apiFetch<{ user: PublicUser }>("/users/billing", { method: "PATCH", body: JSON.stringify(body) }),
   cancelSubscription: () =>
     apiFetch<{ user: PublicUser }>("/users/cancel-subscription", { method: "POST" }),
   dismissWelcome: () =>

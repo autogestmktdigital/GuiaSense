@@ -11,6 +11,9 @@ const registerSchema = z.object({
   name: z.string().min(2, "Informe seu nome.").max(80),
   email: z.string().email("Informe um e-mail válido."),
   password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres."),
+  cpfCnpj: z
+    .string()
+    .regex(/^\d{11}$|^\d{14}$/, "Informe um CPF ou CNPJ válido (somente números)."),
 });
 
 const loginSchema = z.object({
@@ -32,6 +35,14 @@ function publicUser(user: {
   role: string;
   hasSeenWelcome: boolean;
   trialExpiresAt: Date | null;
+  cpfCnpj: string | null;
+  billingZip: string | null;
+  billingStreet: string | null;
+  billingNumber: string | null;
+  billingComplement: string | null;
+  billingDistrict: string | null;
+  billingCity: string | null;
+  billingState: string | null;
   createdAt: Date;
 }) {
   return {
@@ -42,6 +53,14 @@ function publicUser(user: {
     role: user.role,
     hasSeenWelcome: user.hasSeenWelcome,
     trialExpiresAt: user.trialExpiresAt,
+    cpfCnpj: user.cpfCnpj,
+    billingZip: user.billingZip,
+    billingStreet: user.billingStreet,
+    billingNumber: user.billingNumber,
+    billingComplement: user.billingComplement,
+    billingDistrict: user.billingDistrict,
+    billingCity: user.billingCity,
+    billingState: user.billingState,
     createdAt: user.createdAt,
   };
 }
@@ -61,6 +80,7 @@ export async function register(input: unknown) {
       passwordHash,
       accessStatus: "LIBERADO",
       trialExpiresAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
+      cpfCnpj: data.cpfCnpj,
     },
   });
 
