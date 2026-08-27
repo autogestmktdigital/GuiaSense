@@ -176,6 +176,7 @@ export async function listUsers() {
       accessStatus: true,
       role: true,
       createdAt: true,
+      trialExpiresAt: true,
       _count: { select: { transactions: true, payments: true } },
       payments: {
         orderBy: { createdAt: "desc" },
@@ -191,6 +192,7 @@ export async function listUsers() {
     accessStatus: user.accessStatus,
     role: user.role,
     createdAt: user.createdAt,
+    trialExpiresAt: user.trialExpiresAt,
     transactions: user._count.transactions,
     monthsHired: user.payments
       .filter((payment) => payment.status === "APPROVED")
@@ -224,6 +226,7 @@ export async function getUserDetail(userId: string) {
       role: user.role,
       createdAt: user.createdAt,
       planExpiresAt: user.planExpiresAt,
+      trialExpiresAt: user.trialExpiresAt,
     },
     monthsHired,
     currentPlan,

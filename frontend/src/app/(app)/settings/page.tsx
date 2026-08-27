@@ -99,6 +99,7 @@ export default function SettingsPage() {
   const [lastAmount, setLastAmount] = useState<number | null>(null);
   const [lastPlan, setLastPlan] = useState<string | null>(null);
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>("mensal");
   const [savingName, setSavingName] = useState(false);
@@ -115,6 +116,7 @@ export default function SettingsPage() {
     const status = await paymentsApi.status();
     setPaymentStatus(status.paymentStatus);
     setPlanExpiresAt(status.planExpiresAt);
+    setTrialExpiresAt(status.trialExpiresAt);
     if (status.lastPayment) {
       setLastAmount(Number(status.lastPayment.amountBRL));
       setLastPlan(status.lastPayment.plan);
@@ -140,6 +142,9 @@ export default function SettingsPage() {
   const badge = accessBadge[user?.accessStatus ?? "PAGAMENTO_PENDENTE"];
 
   const planExpires = planExpiresAt ? new Date(planExpiresAt) : null;
+  const trialExpires = trialExpiresAt ? new Date(trialExpiresAt) : null;
+  const inTrial = Boolean(trialExpires && trialExpires.getTime() >= Date.now());
+  const trialOverdue = Boolean(trialExpires && trialExpires.getTime() < Date.now());
   const planOverdue = Boolean(
     user &&
       user.accessStatus === "LIBERADO" &&
@@ -282,6 +287,16 @@ export default function SettingsPage() {
             )}
           </div>
 
+          {inTrial && (
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
+              <p className="text-sm text-brand-800">
+                🎉 Você está no <strong>teste grátis</strong> do GuiaSense! Aproveite o acesso
+                completo até <strong>{formatDateShort(trialExpiresAt!)}</strong>. Depois desse
+                período, escolha um plano para continuar usando.
+              </p>
+            </div>
+          )}
+
           {planOverdue && (
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
@@ -319,7 +334,9 @@ export default function SettingsPage() {
                   ? "Sua assinatura foi cancelada. Ao assinar novamente, o acesso é liberado."
                   : user?.accessStatus === "BLOQUEADO"
                     ? "Seu acesso está bloqueado."
-                    : "Seu acesso está pendente de pagamento."}{" "}
+                    : trialOverdue
+                      ? "Seu teste gratuito de 8 dias terminou. Escolha um plano para continuar usando o GuiaSense."
+                      : "Seu acesso está pendente de pagamento."}{" "}
                 Ao confirmar o pagamento, o acesso é liberado automaticamente.
               </p>
               <div className="mt-3 space-y-3">

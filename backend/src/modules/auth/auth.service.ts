@@ -5,6 +5,7 @@ import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { HttpError } from "../../lib/httpError";
 import { seedDefaultCategories } from "../../utils/seedCategories";
+import { TRIAL_DAYS } from "../payments/plans";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Informe seu nome.").max(80),
@@ -30,6 +31,7 @@ function publicUser(user: {
   accessStatus: string;
   role: string;
   hasSeenWelcome: boolean;
+  trialExpiresAt: Date | null;
   createdAt: Date;
 }) {
   return {
@@ -39,6 +41,7 @@ function publicUser(user: {
     accessStatus: user.accessStatus,
     role: user.role,
     hasSeenWelcome: user.hasSeenWelcome,
+    trialExpiresAt: user.trialExpiresAt,
     createdAt: user.createdAt,
   };
 }
@@ -56,7 +59,8 @@ export async function register(input: unknown) {
       name: data.name.trim(),
       email: data.email.toLowerCase().trim(),
       passwordHash,
-      accessStatus: "PAGAMENTO_PENDENTE",
+      accessStatus: "LIBERADO",
+      trialExpiresAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
     },
   });
 

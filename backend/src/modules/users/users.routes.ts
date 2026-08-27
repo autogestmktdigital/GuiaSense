@@ -25,6 +25,7 @@ router.patch("/me", async (req: AuthRequest, res) => {
       accessStatus: user.accessStatus,
       role: user.role,
       hasSeenWelcome: user.hasSeenWelcome,
+      trialExpiresAt: user.trialExpiresAt,
     },
   });
 });
@@ -42,6 +43,7 @@ router.post("/cancel-subscription", async (req: AuthRequest, res) => {
       accessStatus: user.accessStatus,
       role: user.role,
       hasSeenWelcome: user.hasSeenWelcome,
+      trialExpiresAt: user.trialExpiresAt,
     },
   });
 });

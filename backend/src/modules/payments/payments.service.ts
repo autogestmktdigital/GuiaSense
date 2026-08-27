@@ -3,7 +3,7 @@ import { PaymentStatus } from "@prisma/client";
 import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { HttpError } from "../../lib/httpError";
-import { getPlan, GRACE_DAYS, PLANS, planExpiresFor } from "./plans";
+import { getPlan, GRACE_DAYS, PLANS, planExpiresFor, TRIAL_DAYS } from "./plans";
 
 function hasMpConfigured(): boolean {
   return Boolean(env.mercadopagoAccessToken);
@@ -33,20 +33,36 @@ export async function getStatus(userId: string) {
     paymentStatus: lastPayment?.status ?? null,
     lastPayment,
     planExpiresAt: user.planExpiresAt,
+    trialExpiresAt: user.trialExpiresAt,
   };
 }
 
-export async function expireOverduePlans(): Promise<number> {
+export function trialDays(): number {
+  return TRIAL_DAYS;
+}
+
+export async function expireOverduePlans(): Promise<{ plansExpired: number; trialsExpired: number }> {
   const now = new Date();
   const cutoff = new Date(now.getTime() - GRACE_DAYS * 24 * 60 * 60 * 1000);
-  const result = await prisma.user.updateMany({
-    where: {
-      accessStatus: "LIBERADO",
-      planExpiresAt: { not: null, lt: cutoff },
-    },
-    data: { accessStatus: "PAGAMENTO_PENDENTE" },
-  });
-  return result.count;
+
+  const [plansExpired, trialsExpired] = await Promise.all([
+    prisma.user.updateMany({
+      where: {
+        accessStatus: "LIBERADO",
+        planExpiresAt: { not: null, lt: cutoff },
+      },
+      data: { accessStatus: "PAGAMENTO_PENDENTE" },
+    }),
+    prisma.user.updateMany({
+      where: {
+        accessStatus: "LIBERADO",
+        trialExpiresAt: { not: null, lt: now },
+      },
+      data: { accessStatus: "PAGAMENTO_PENDENTE" },
+    }),
+  ]);
+
+  return { plansExpired: plansExpired.count, trialsExpired: trialsExpired.count };
 }
 
 export async function createCheckout(userId: string, planId?: string) {
@@ -127,6 +143,7 @@ async function applyPaymentApproval(payment: {
     data: {
       accessStatus: "LIBERADO",
       planExpiresAt: planExpiresFor(plan),
+      trialExpiresAt: null,
     },
   });
 

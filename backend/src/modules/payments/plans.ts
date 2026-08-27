@@ -39,6 +39,7 @@ export const PLANS: Plan[] = [
 ];
 
 export const GRACE_DAYS = 10;
+export const TRIAL_DAYS = 8;
 
 export function getPlan(planId?: string): Plan {
   const plan = PLANS.find((item) => item.id === planId);

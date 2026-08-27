@@ -23,5 +23,12 @@ export async function requireAccess(req: AuthRequest, _res: Response, next: Next
     throw new HttpError(403, message);
   }
 
+  if (user.trialExpiresAt && user.trialExpiresAt.getTime() < Date.now()) {
+    throw new HttpError(
+      403,
+      "Seu teste gratuito de 8 dias terminou. Escolha um plano para continuar usando o GuiaSense.",
+    );
+  }
+
   next();
 }

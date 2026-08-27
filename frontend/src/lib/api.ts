@@ -66,6 +66,7 @@ export type PublicUser = {
   accessStatus: "LIBERADO" | "PAGAMENTO_PENDENTE" | "BLOQUEADO" | "CANCELADO";
   role?: "USER" | "ADMIN";
   hasSeenWelcome: boolean;
+  trialExpiresAt: string | null;
   createdAt: string;
 };
 
@@ -207,6 +208,7 @@ export type AdminUser = {
   accessStatus: string;
   role: string;
   createdAt: string;
+  trialExpiresAt: string | null;
   transactions: number;
   monthsHired: number;
   lastPayment: { status: string; plan: string; amountBRL: string; createdAt: string } | null;
@@ -240,6 +242,7 @@ export type AdminUserDetail = {
     role: string;
     createdAt: string;
     planExpiresAt: string | null;
+    trialExpiresAt: string | null;
   };
   monthsHired: number;
   currentPlan: string | null;
@@ -336,6 +339,7 @@ export type PaymentStatusResponse = {
   accessStatus: PublicUser["accessStatus"];
   paymentStatus: string | null;
   planExpiresAt: string | null;
+  trialExpiresAt: string | null;
   lastPayment: { id: string; status: string; plan: string; amountBRL: string; createdAt: string } | null;
 };
 

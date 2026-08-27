@@ -7,9 +7,12 @@ const PLAN_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 async function checkPlans(): Promise<void> {
   try {
-    const expired = await expireOverduePlans();
-    if (expired > 0) {
-      console.log(`Planos vencidos: ${expired} usuário(s) marcado(s) como pendentes.`);
+    const { plansExpired, trialsExpired } = await expireOverduePlans();
+    if (plansExpired > 0) {
+      console.log(`Planos vencidos: ${plansExpired} usuário(s) marcado(s) como pendentes.`);
+    }
+    if (trialsExpired > 0) {
+      console.log(`Testes grátis vencidos: ${trialsExpired} usuário(s) marcado(s) como pendentes.`);
     }
   } catch (error) {
     console.error("Falha ao verificar planos vencidos:", error);

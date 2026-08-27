@@ -112,6 +112,9 @@ function AccessGate() {
 
   const status = user?.accessStatus ?? "PAGAMENTO_PENDENTE";
 
+  const trialExpired =
+    user?.trialExpiresAt != null && new Date(user.trialExpiresAt).getTime() < Date.now();
+
   const config =
     status === "BLOQUEADO"
       ? {
@@ -127,12 +130,19 @@ function AccessGate() {
             description: "Sua assinatura foi cancelada. Renove para continuar usando o GuiaSense.",
             accent: "bg-slate-100 text-slate-600",
           }
-        : {
-            icon: Clock,
-            title: "Pagamento pendente",
-            description: "Assine o GuiaSense para liberar todas as funcionalidades.",
-            accent: "bg-amber-100 text-amber-600",
-          };
+        : trialExpired
+          ? {
+              icon: Clock,
+              title: "Seu teste gratuito terminou",
+              description: "Aproveite o GuiaSense assinando um plano.",
+              accent: "bg-amber-100 text-amber-600",
+            }
+          : {
+              icon: Clock,
+              title: "Pagamento pendente",
+              description: "Assine o GuiaSense para liberar todas as funcionalidades.",
+              accent: "bg-amber-100 text-amber-600",
+            };
 
   async function handleCheckout() {
     setLoading(true);
