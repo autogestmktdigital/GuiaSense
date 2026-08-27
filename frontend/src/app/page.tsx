@@ -206,15 +206,17 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-slate-100 py-8">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
-          <Logo size="sm" />
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" />
+            <p className="text-xs text-slate-400">
+              DevCerto Tecnologia LTDA - CNPJ: 68.827.410/0001-44
+            </p>
+          </div>
           <p className="text-sm text-slate-400">
             © {new Date().getFullYear()} GuiaSense. Seu guia financeiro.
           </p>
         </div>
-        <p className="mx-auto mt-4 w-full max-w-6xl px-4 text-center text-xs text-slate-400 sm:px-6">
-          DevCerto Tecnologia LTDA - CNPJ: 68.827.410/0001-44
-        </p>
       </footer>
     </div>
   );
