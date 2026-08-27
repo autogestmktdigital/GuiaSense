@@ -517,9 +517,20 @@ export default function SettingsPage() {
 
       <Modal open={showBilling} onClose={() => setShowBilling(false)} title="Dados para a nota fiscal">
         <form onSubmit={handleBillingSubmit} className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Para emitir a nota fiscal da sua assinatura, precisamos dos seus dados fiscais.
-          </p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Dados necessários para emissão da nota fiscal
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-slate-600">
+              <li>• Nome completo (já cadastrado)</li>
+              <li>• CPF ou CNPJ</li>
+              <li>• Endereço de cobrança</li>
+            </ul>
+            <p className="mt-2 text-xs text-slate-400">
+              Esses dados são usados exclusivamente para emitir a NFS-e da sua assinatura, em
+              conformidade com a legislação brasileira.
+            </p>
+          </div>
           {!user?.cpfCnpj && (
             <Field
               label="CPF ou CNPJ"
