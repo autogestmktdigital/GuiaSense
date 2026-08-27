@@ -109,6 +109,7 @@ export async function createCheckout(userId: string, planId?: string) {
       },
       auto_return: "approved",
       notification_url: `${env.apiUrl}/api/payments/webhook`,
+      external_reference: payment.id,
     },
     {
       headers: {
@@ -172,10 +173,23 @@ export async function handleWebhook(body: unknown) {
       const response = await axios.get(`https://api.mercadopago.com/v1/payments/${id}`, {
         headers: { Authorization: `Bearer ${env.mercadopagoAccessToken}` },
       });
-      const paymentData = response.data as { status?: string };
+      const paymentData = response.data as {
+        status?: string;
+        external_reference?: string;
+        id?: string;
+      };
       if (paymentData.status === "approved") {
-        const payment = await prisma.payment.findFirst({ where: { mpPaymentId: String(id) } });
-        if (payment) return applyPaymentApproval(payment);
+        const payment =
+          (paymentData.external_reference &&
+            (await prisma.payment.findUnique({ where: { id: paymentData.external_reference } }))) ||
+          (await prisma.payment.findFirst({ where: { mpPaymentId: String(id) } }));
+        if (payment) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { mpPaymentId: String(id) },
+          });
+          return applyPaymentApproval(payment);
+        }
         return { ok: false, reason: "payment_not_found" };
       }
     } else {
@@ -189,6 +203,48 @@ export async function handleWebhook(body: unknown) {
   }
 
   return { ok: true, handled: false };
+}
+
+export async function reconcileByMpPaymentId(mpPaymentId: string) {
+  if (!hasMpConfigured()) {
+    return { ok: false, reason: "mercadopago_not_configured" };
+  }
+
+  const response = await axios.get(`https://api.mercadopago.com/v1/payments/${mpPaymentId}`, {
+    headers: { Authorization: `Bearer ${env.mercadopagoAccessToken}` },
+  });
+  const paymentData = response.data as { status?: string; order?: { id?: string } };
+  if (paymentData.status !== "approved") {
+    return { ok: false, reason: `status_${paymentData.status}` };
+  }
+
+  let payment = await prisma.payment.findFirst({ where: { mpPaymentId: String(mpPaymentId) } });
+
+  if (!payment && paymentData.order?.id) {
+    try {
+      const order = await axios.get(
+        `https://api.mercadopago.com/merchant_orders/${paymentData.order.id}`,
+        { headers: { Authorization: `Bearer ${env.mercadopagoAccessToken}` } },
+      );
+      const preferenceId = (order.data as { preference_id?: string }).preference_id;
+      if (preferenceId) {
+        payment = await prisma.payment.findFirst({ where: { mpPreferenceId: preferenceId } });
+      }
+    } catch {
+      payment = null;
+    }
+  }
+
+  if (!payment) {
+    return { ok: false, reason: "payment_not_found" };
+  }
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: { mpPaymentId: String(mpPaymentId) },
+  });
+
+  return applyPaymentApproval(payment);
 }
 
 export async function simulateApproval(paymentId: string) {

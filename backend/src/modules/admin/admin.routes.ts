@@ -13,6 +13,7 @@ import {
   paymentStatusLabel,
   accessStatusLabel,
 } from "./admin.service";
+import { reconcileByMpPaymentId } from "../payments/payments.service";
 
 const router = Router();
 
@@ -65,6 +66,16 @@ router.post("/users/:userId/bonus", async (req: AuthRequest, res) => {
   const days = Number(req.body?.days ?? 0);
   const user = await grantAccessBonus(req.params.userId, days);
   res.json({ user });
+});
+
+router.post("/payments/reconcile", async (req: AuthRequest, res) => {
+  const mpPaymentId = String(req.body?.mpPaymentId ?? "");
+  if (!mpPaymentId) {
+    res.status(400).json({ error: "mpPaymentId obrigatório." });
+    return;
+  }
+  const result = await reconcileByMpPaymentId(mpPaymentId);
+  res.json(result);
 });
 
 router.get("/payment-status-labels", (_req: AuthRequest, res) => {
