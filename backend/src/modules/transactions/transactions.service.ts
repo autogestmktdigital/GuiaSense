@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { TransactionType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma";
@@ -97,7 +98,7 @@ export async function createTransaction(userId: string, input: unknown) {
 
   const baseDate = new Date(data.date);
   const total = (data.repetitions ?? 0) + 1;
-  const seriesId = data.repetitions ? crypto.randomUUID() : null;
+  const seriesId = data.repetitions ? randomUUID() : null;
 
   const records = Array.from({ length: total }, (_, index) => ({
     userId,
