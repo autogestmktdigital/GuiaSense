@@ -288,12 +288,35 @@ export default function SettingsPage() {
           </div>
 
           {inTrial && (
-            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
-              <p className="text-sm text-brand-800">
-                🎉 Você está no <strong>teste grátis</strong> do GuiaSense! Aproveite o acesso
-                completo até <strong>{formatDateShort(trialExpiresAt!)}</strong>. Depois desse
-                período, escolha um plano para continuar usando.
-              </p>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
+                <p className="text-sm text-brand-800">
+                  🎉 Você está no <strong>teste grátis</strong> do GuiaSense! Aproveite o acesso
+                  completo até <strong>{formatDateShort(trialExpiresAt!)}</strong>. Depois desse
+                  período, escolha um plano para continuar usando.
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-medium text-slate-700">
+                  Quer garantir seu plano desde já?
+                </p>
+                <div className="mt-3 space-y-3">
+                  <PlanPicker plans={plans} value={selectedPlan} onChange={setSelectedPlan} />
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={handleCheckout} loading={checkoutLoading}>
+                      <CreditCard className="h-4 w-4" /> Assinar agora
+                    </Button>
+                    {checkoutPaymentId && (
+                      <Button variant="success" onClick={handleSimulate} loading={checkoutLoading}>
+                        <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento (teste)
+                      </Button>
+                    )}
+                  </div>
+                  {checkoutMessage && (
+                    <p className="mt-2 text-sm font-medium text-emerald-700">{checkoutMessage}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
