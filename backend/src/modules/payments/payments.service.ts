@@ -108,7 +108,7 @@ export async function createCheckout(userId: string, planId?: string) {
         failure: `${env.frontendUrl}/settings`,
       },
       auto_return: "approved",
-      notification_url: `${env.frontendUrl}/api/payments/webhook`,
+      notification_url: `${env.apiUrl}/api/payments/webhook`,
     },
     {
       headers: {

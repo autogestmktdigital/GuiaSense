@@ -19,6 +19,7 @@ export const env = {
   deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
   deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-chat",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+  apiUrl: process.env.API_URL || "http://localhost:4000",
   mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "",
   mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET || "",
   adminPromotionCode: process.env.ADMIN_PROMOTION_CODE || "",
