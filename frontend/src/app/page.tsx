@@ -3,7 +3,6 @@ import {
   Sparkles,
   ArrowRight,
   Wallet,
-  TrendingUp,
   BellRing,
   CalendarClock,
   PieChart,
@@ -78,8 +77,8 @@ export default function HomePage() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Seu guia financeiro pessoal
+              <Sparkles className="h-3.5 w-3.5" />
+              8 dias grátis para testar
             </div>
             <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
               Suas finanças com{" "}
@@ -107,9 +106,15 @@ export default function HomePage() {
                 Já tenho conta
               </Link>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm text-slate-500">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              Seus dados financeiros são protegidos e privados.
+            <div className="mt-6 space-y-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                Seus dados financeiros são protegidos e privados.
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brand-600" />
+                Teste grátis por 8 dias, sem cartão de crédito.
+              </div>
             </div>
           </div>
 
@@ -196,7 +201,7 @@ export default function HomePage() {
           </Link>
         </div>
         <p className="mt-4 text-sm text-slate-500">
-          Acesso imediato. Cancelamento quando quiser.
+          8 dias grátis para testar. Acesso imediato. Cancelamento quando quiser.
         </p>
       </section>
 
