@@ -10,6 +10,10 @@ const updateSchema = z.object({
 });
 
 const billingSchema = z.object({
+  cpfCnpj: z
+    .string()
+    .regex(/^\d{11}$|^\d{14}$/, "Informe um CPF ou CNPJ válido (somente números).")
+    .optional(),
   billingZip: z.string().min(8, "Informe o CEP.").max(10),
   billingStreet: z.string().min(2, "Informe o logradouro.").max(120),
   billingNumber: z.string().min(1, "Informe o número.").max(10),
@@ -71,6 +75,7 @@ router.patch("/billing", async (req: AuthRequest, res) => {
   const user = await prisma.user.update({
     where: { id: req.user!.id },
     data: {
+      cpfCnpj: data.cpfCnpj,
       billingZip: data.billingZip,
       billingStreet: data.billingStreet,
       billingNumber: data.billingNumber,

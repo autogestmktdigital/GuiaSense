@@ -115,6 +115,7 @@ export default function SettingsPage() {
   const [showBilling, setShowBilling] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingError, setBillingError] = useState("");
+  const [billingCpf, setBillingCpf] = useState("");
   const [billing, setBilling] = useState({
     billingZip: "",
     billingStreet: "",
@@ -180,6 +181,7 @@ export default function SettingsPage() {
 
   function openBillingForm() {
     setBillingError("");
+    setBillingCpf(user?.cpfCnpj ?? "");
     setBilling({
       billingZip: user?.billingZip ?? "",
       billingStreet: user?.billingStreet ?? "",
@@ -221,6 +223,11 @@ export default function SettingsPage() {
   async function handleBillingSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBillingError("");
+    const cpfDigits = billingCpf.replace(/\D/g, "");
+    if (!user?.cpfCnpj && cpfDigits.length !== 11 && cpfDigits.length !== 14) {
+      setBillingError("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.");
+      return;
+    }
     if (!billing.billingZip || !billing.billingStreet || !billing.billingNumber ||
         !billing.billingDistrict || !billing.billingCity || !billing.billingState) {
       setBillingError("Preencha todos os campos do endereço.");
@@ -229,6 +236,7 @@ export default function SettingsPage() {
     setBillingSaving(true);
     try {
       await usersApi.updateBilling({
+        cpfCnpj: cpfDigits || undefined,
         billingZip: billing.billingZip,
         billingStreet: billing.billingStreet,
         billingNumber: billing.billingNumber,
@@ -510,8 +518,27 @@ export default function SettingsPage() {
       <Modal open={showBilling} onClose={() => setShowBilling(false)} title="Dados para a nota fiscal">
         <form onSubmit={handleBillingSubmit} className="space-y-4">
           <p className="text-sm text-slate-600">
-            Para emitir a nota fiscal da sua assinatura, precisamos do seu endereço de cobrança.
+            Para emitir a nota fiscal da sua assinatura, precisamos dos seus dados fiscais.
           </p>
+          {!user?.cpfCnpj && (
+            <Field
+              label="CPF ou CNPJ"
+              htmlFor="billingCpf"
+              hint="Somente números."
+            >
+              <Input
+                id="billingCpf"
+                required
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="000.000.000-00"
+                value={billingCpf}
+                onChange={(e) =>
+                  setBillingCpf(e.target.value.replace(/\D/g, "").slice(0, 14))
+                }
+              />
+            </Field>
+          )}
           <Field label="CEP" htmlFor="billingZip">
             <div className="relative">
               <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

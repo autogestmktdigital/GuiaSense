@@ -79,6 +79,7 @@ export type PublicUser = {
 };
 
 export type BillingData = {
+  cpfCnpj?: string;
   billingZip: string;
   billingStreet: string;
   billingNumber: string;
