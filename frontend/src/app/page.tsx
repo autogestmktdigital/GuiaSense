@@ -27,6 +27,7 @@ import {
 import { Logo } from "@/components/ui/logo";
 import { LandingFaq } from "@/components/landing-faq";
 import { LandingCta } from "@/components/landing-cta";
+import { ConsentPreferencesLink } from "@/components/consent-preferences-link";
 
 const situations = [
   {
@@ -858,13 +859,14 @@ export default function HomePage() {
             © {new Date().getFullYear()} GuiaSense. Seu guia financeiro.
           </p>
         </div>
-        <div className="mt-3 text-center">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           <a
             href="/privacidade"
             className="text-xs text-slate-400 underline-offset-4 hover:text-slate-600 hover:underline"
           >
             Política de Privacidade
           </a>
+          <ConsentPreferencesLink className="text-xs text-slate-400 underline-offset-4 hover:text-slate-600 hover:underline" />
         </div>
       </footer>
     </div>

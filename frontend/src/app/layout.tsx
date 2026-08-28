@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { ConsentBanner } from "@/components/consent-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,11 +38,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 __html: `
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){ window.dataLayer.push(arguments); }
+                  var _guiasensePreference = null;
+                  try { _guiasensePreference = JSON.parse(localStorage.getItem('guiasense_consent') || 'null'); } catch (_e) {}
+                  var _analyticsSignal = (_guiasensePreference && _guiasensePreference.analytics === true) ? 'granted' : 'denied';
+                  var _marketingSignal = (_guiasensePreference && _guiasensePreference.marketing === true) ? 'granted' : 'denied';
                   gtag('consent','default',{
-                    analytics_storage: 'denied',
-                    ad_storage: 'denied',
-                    ad_user_data: 'denied',
-                    ad_personalization: 'denied',
+                    analytics_storage: _analyticsSignal,
+                    ad_storage: _marketingSignal,
+                    ad_user_data: _marketingSignal,
+                    ad_personalization: _marketingSignal,
                     functionality_storage: 'granted',
                     personalization_storage: 'denied',
                     security_storage: 'granted',
@@ -68,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
         <Providers>
           <AnalyticsProvider>{children}</AnalyticsProvider>
+          <ConsentBanner />
         </Providers>
       </body>
     </html>
