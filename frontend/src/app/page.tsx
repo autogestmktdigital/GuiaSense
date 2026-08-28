@@ -153,8 +153,8 @@ const plans = [
   {
     name: "Semestral",
     price: "R$ 139,00",
-    period: "a cada 6 meses",
-    equivalent: "Equivale a ~R$ 23,17/mês",
+    period: "por 6 meses",
+    equivalent: "Equivale a R$ 23,17/mês",
     deal: null,
     description: "Mais praticidade para os próximos meses.",
   },
@@ -636,7 +636,7 @@ export default function HomePage() {
             Sem cartão de crédito • Leva menos de 1 minuto para criar sua conta
           </p>
           <p className="mt-2 text-sm text-slate-400">
-            Você começa simples. O GuiaSense ajuda a organizar o restante.
+            Você começa simples. O GuiaSense ajuda você a acompanhar o restante.
           </p>
         </div>
       </section>

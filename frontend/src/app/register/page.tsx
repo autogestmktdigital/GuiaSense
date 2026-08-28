@@ -109,8 +109,8 @@ export default function RegisterPage() {
             Li e concordo com a{" "}
             <Link href="/privacidade" className="font-semibold text-brand-600 hover:underline">
               Política de Privacidade
-            </Link>{" "}
-            e com o tratamento dos meus dados para fornecimento do serviço e emissão de nota fiscal.
+            </Link>
+            .
           </span>
         </label>
 
