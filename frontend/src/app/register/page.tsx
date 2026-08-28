@@ -8,6 +8,7 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { Field, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { pushDataLayerEvent } from "@/lib/analytics";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -32,7 +33,11 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(name, email, password, consent);
+      const user = await register(name, email, password, consent);
+      pushDataLayerEvent("sign_up", { method: "email" });
+      if (user.trialExpiresAt) {
+        pushDataLayerEvent("trial_started", { trial_days: 8 });
+      }
       router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível criar a conta.");

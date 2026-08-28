@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { LandingFaq } from "@/components/landing-faq";
+import { LandingCta } from "@/components/landing-cta";
 
 const situations = [
   {
@@ -148,6 +149,8 @@ const plans = [
     period: "por mês",
     equivalent: null,
     deal: null,
+    ctaLocation: "pricing_monthly",
+    planInterest: "monthly",
     description: "Para quem prefere continuar mês a mês.",
   },
   {
@@ -156,6 +159,8 @@ const plans = [
     period: "por 6 meses",
     equivalent: "Equivale a R$ 23,17/mês",
     deal: null,
+    ctaLocation: "pricing_semiannual",
+    planInterest: "semiannual",
     description: "Mais praticidade para os próximos meses.",
   },
   {
@@ -164,6 +169,8 @@ const plans = [
     period: "por 12 meses",
     equivalent: "Equivale a R$ 20,75/mês",
     deal: "12 meses pelo preço de 10",
+    ctaLocation: "pricing_annual",
+    planInterest: "annual",
     description: "A melhor condição para acompanhar suas finanças durante todo o ano.",
     featured: true,
   },
@@ -191,12 +198,13 @@ export default function HomePage() {
             >
               Entrar
             </Link>
-            <Link
+            <LandingCta
               href="/register"
+              ctaLocation="header"
               className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 hover:bg-brand-700"
             >
               Testar grátis
-            </Link>
+            </LandingCta>
           </div>
         </div>
       </header>
@@ -221,13 +229,14 @@ export default function HomePage() {
               finanças.
             </p>
             <div className="mt-8">
-              <Link
+              <LandingCta
                 href="/register"
+                ctaLocation="hero"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 text-base font-semibold text-white shadow-lg shadow-brand-600/30 transition-colors hover:bg-brand-700 sm:w-auto"
               >
                 Testar grátis por 8 dias
                 <ArrowRight className="h-5 w-5" />
-              </Link>
+              </LandingCta>
               <p className="mt-3 text-sm text-slate-500">
                 <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span>Sem cartão de crédito</span>
@@ -408,13 +417,14 @@ export default function HomePage() {
               com eles.
             </p>
             <div className="mt-8">
-              <Link
+              <LandingCta
                 href="/register"
+                ctaLocation="differential"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 text-base font-semibold text-white shadow-lg shadow-brand-600/30 transition-colors hover:bg-brand-700 sm:w-auto"
               >
                 Testar grátis por 8 dias
                 <ArrowRight className="h-5 w-5" />
-              </Link>
+              </LandingCta>
               <p className="mt-3 text-sm text-slate-500">Sem cartão de crédito</p>
             </div>
           </div>
@@ -625,13 +635,14 @@ export default function HomePage() {
         </div>
 
         <div className="mt-14 text-center">
-          <Link
+          <LandingCta
             href="/register"
+            ctaLocation="how_it_works"
             className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 text-base font-semibold text-white shadow-lg shadow-brand-600/30 transition-colors hover:bg-brand-700 sm:w-auto"
           >
             Testar grátis por 8 dias
             <ArrowRight className="h-5 w-5" />
-          </Link>
+          </LandingCta>
           <p className="mt-3 text-sm text-slate-500">
             Sem cartão de crédito • Leva menos de 1 minuto para criar sua conta
           </p>
@@ -755,12 +766,14 @@ export default function HomePage() {
               )}
               <p className="mt-3 text-sm text-slate-600">{plan.description}</p>
               <div className="mt-6 flex-1" />
-              <Link
+              <LandingCta
                 href="/register"
+                ctaLocation={plan.ctaLocation}
+                planInterest={plan.planInterest}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-colors hover:bg-brand-700"
               >
                 Testar grátis
-              </Link>
+              </LandingCta>
             </div>
           ))}
         </div>
@@ -815,13 +828,14 @@ export default function HomePage() {
             <p className="mt-4 text-lg text-brand-100">
               Comece agora e experimente o GuiaSense gratuitamente por 8 dias.
             </p>
-            <Link
+            <LandingCta
               href="/register"
+              ctaLocation="final_cta"
               className="mt-8 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-base font-bold text-brand-700 shadow-xl shadow-brand-900/25 transition-colors hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
             >
               Testar grátis por 8 dias
               <ArrowRight className="h-5 w-5" />
-            </Link>
+            </LandingCta>
             <p className="mt-5 text-sm text-brand-100">
               Sem cartão de crédito • Leva menos de 1 minuto para criar sua conta
             </p>
