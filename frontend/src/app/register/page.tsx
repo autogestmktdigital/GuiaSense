@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout
-      title="Crie sua conta"
+      title="Começar meus 8 dias grátis"
       subtitle="Comece a organizar suas finanças em poucos minutos."
     >
       <form onSubmit={handleSubmit} className="space-y-4">
