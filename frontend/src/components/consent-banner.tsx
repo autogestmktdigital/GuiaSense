@@ -13,6 +13,7 @@ import {
   acceptAllConsent,
   declineOptionalConsent,
   defaultConsentSettings,
+  pushMarketingConsentIfGranted,
   type ConsentSettings,
 } from "@/lib/consent";
 
@@ -84,6 +85,7 @@ export function ConsentBanner() {
   function handleSave() {
     saveConsentSettings(draft);
     applyConsentMode(draft);
+    pushMarketingConsentIfGranted(draft);
     setPreferencesOpen(false);
     setBannerVisible(false);
   }

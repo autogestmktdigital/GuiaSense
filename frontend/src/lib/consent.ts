@@ -1,5 +1,7 @@
 "use client";
 
+import { pushDataLayerEvent } from "./analytics";
+
 export type ConsentSettings = {
   analytics: boolean;
   marketing: boolean;
@@ -61,6 +63,12 @@ export function acceptAllConsent(): void {
   const settings: ConsentSettings = { analytics: true, marketing: true };
   saveConsentSettings(settings);
   applyConsentMode(settings);
+  pushMarketingConsentIfGranted(settings);
+}
+
+export function pushMarketingConsentIfGranted(settings: ConsentSettings): void {
+  if (!settings.marketing) return;
+  pushDataLayerEvent("marketing_consent_granted");
 }
 
 export function declineOptionalConsent(): void {
