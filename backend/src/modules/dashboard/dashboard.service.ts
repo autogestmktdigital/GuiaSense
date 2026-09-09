@@ -185,7 +185,7 @@ export async function getOverview(userId: string) {
     prisma.transaction.findMany({
       where: { userId },
       include: { category: true },
-      orderBy: { date: "desc" },
+      orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       take: 6,
     }),
     (async () => {

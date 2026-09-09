@@ -10,6 +10,7 @@ import {
   Sparkles,
   Plus,
   ArrowRight,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,23 +31,41 @@ function StatCard({
   icon,
   accent,
   delta,
+  href,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
   accent: string;
   delta?: string;
+  href?: string;
 }) {
-  return (
-    <Card className="p-5">
+  const content = (
+    <>
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{label}</p>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${accent}`}>{icon}</div>
+        <div className="flex items-center gap-1.5">
+          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${accent}`}>{icon}</div>
+          {href && <ChevronRight className="h-4 w-4 text-slate-300" />}
+        </div>
       </div>
       <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{value}</p>
       {delta && <p className="mt-1 text-xs text-slate-400">{delta}</p>}
-    </Card>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block transition-opacity hover:opacity-80"
+      >
+        <Card className="p-5">{content}</Card>
+      </Link>
+    );
+  }
+
+  return <Card className="p-5">{content}</Card>;
 }
 
 function InsightCard({ insight, expanded = false }: { insight: Insight; expanded?: boolean }) {
@@ -176,6 +195,7 @@ export default function DashboardPage() {
           icon={<ArrowUpRight className="h-4 w-4" />}
           accent="bg-emerald-50 text-emerald-600"
           delta={`Falta receber neste mês: ${formatBRL(totals.pendingIncome)}`}
+          href="/transactions?filter=INCOME"
         />
         <StatCard
           label="Saídas"
@@ -183,6 +203,7 @@ export default function DashboardPage() {
           icon={<ArrowDownRight className="h-4 w-4" />}
           accent="bg-rose-50 text-rose-600"
           delta={`Falta pagar neste mês: ${formatBRL(totals.pendingExpense)}`}
+          href="/transactions?filter=EXPENSE"
         />
       </div>
 

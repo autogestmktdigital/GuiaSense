@@ -36,6 +36,14 @@ export default function TransactionsPage() {
     load();
   }, [month]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get("filter");
+    if (value === "INCOME" || value === "EXPENSE") {
+      setFilter(value);
+    }
+  }, []);
+
   const filtered = useMemo(() => {
     if (filter === "ALL") return transactions;
     return transactions.filter((t) => t.type === filter);
@@ -141,7 +149,7 @@ export default function TransactionsPage() {
         <Card className="p-0">
           <ul className="divide-y divide-slate-100">
             {filtered.map((transaction) => (
-              <li key={transaction.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+              <li key={transaction.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:px-5">
                 <div
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                     transaction.type === "EXPENSE" ? "bg-rose-50" : "bg-emerald-50"
@@ -149,8 +157,8 @@ export default function TransactionsPage() {
                 >
                   <CategoryIcon name={transaction.category.icon} color={transaction.category.color} />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-800">
+                <div className="min-w-0 flex-1 sm:min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 sm:truncate">
                     {transaction.description}
                   </p>
                   <p className="text-xs text-slate-400">
@@ -159,14 +167,15 @@ export default function TransactionsPage() {
                     {formatDate(transaction.date)}
                   </p>
                 </div>
-                <span
-                  className={`shrink-0 text-sm font-bold ${
-                    transaction.type === "EXPENSE" ? "text-rose-600" : "text-emerald-600"
-                  }`}
-                >
-                  {transaction.type === "EXPENSE" ? "−" : "+"}
-                  {formatBRL(Number(transaction.amount))}
-                </span>
+                <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:ml-0 sm:flex-nowrap sm:gap-x-3 sm:gap-y-0">
+                  <span
+                    className={`shrink-0 text-sm font-bold ${
+                      transaction.type === "EXPENSE" ? "text-rose-600" : "text-emerald-600"
+                    }`}
+                  >
+                    {transaction.type === "EXPENSE" ? "−" : "+"}
+                    {formatBRL(Number(transaction.amount))}
+                  </span>
                 <button
                   type="button"
                   onClick={() => handleTogglePaid(transaction)}
@@ -190,6 +199,7 @@ export default function TransactionsPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
+                </div>
                 </div>
               </li>
             ))}

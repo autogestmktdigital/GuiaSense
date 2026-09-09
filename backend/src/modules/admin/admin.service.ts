@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { HttpError } from "../../lib/httpError";
 
 export async function anonymizeUserForLgpd(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -331,4 +332,22 @@ export async function setUserRole(userId: string, role: "ADMIN" | "USER") {
     data: { role },
     select: { id: true, email: true, role: true },
   });
+}
+
+export async function deleteUser(userId: string, actorId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new HttpError(404, "Usuário não encontrado.");
+  }
+  if (user.id === actorId) {
+    throw new HttpError(400, "Você não pode excluir a própria conta.");
+  }
+  if (user.role === "ADMIN") {
+    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+    if (adminCount <= 1) {
+      throw new HttpError(400, "Não é possível excluir o último administrador.");
+    }
+  }
+  await prisma.user.delete({ where: { id: user.id } });
+  return { id: user.id, name: user.name, email: user.email };
 }

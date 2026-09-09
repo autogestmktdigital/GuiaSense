@@ -11,6 +11,7 @@ import {
   setUserRole,
   grantAccessBonus,
   anonymizeUserForLgpd,
+  deleteUser,
   paymentStatusLabel,
   accessStatusLabel,
 } from "./admin.service";
@@ -72,6 +73,11 @@ router.post("/users/:userId/bonus", async (req: AuthRequest, res) => {
 router.post("/users/:userId/anonymize", async (req: AuthRequest, res) => {
   const result = await anonymizeUserForLgpd(req.params.userId);
   res.json({ ok: true, id: result.id });
+});
+
+router.delete("/users/:userId", async (req: AuthRequest, res) => {
+  const user = await deleteUser(req.params.userId, req.user?.id ?? "");
+  res.json({ ok: true, user });
 });
 
 router.post("/payments/reconcile", async (req: AuthRequest, res) => {

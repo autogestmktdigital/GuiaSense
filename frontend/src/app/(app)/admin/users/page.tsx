@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RefreshCw, Loader2, CreditCard, CalendarDays } from "lucide-react";
+import { Search, RefreshCw, Loader2, CreditCard, CalendarDays, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,9 @@ export default function AdminUsersPage() {
   const [bonusDays, setBonusDays] = useState("30");
   const [bonusLoading, setBonusLoading] = useState(false);
   const [bonusMessage, setBonusMessage] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
@@ -153,6 +156,22 @@ export default function AdminUsersPage() {
       setPromoteError(err instanceof Error ? err.message : "Não foi possível alterar o papel.");
     } finally {
       setRoleLoading(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      await adminApi.deleteUser(deleteTarget.id);
+      setDeleteTarget(null);
+      setSelectedUser(null);
+      await load();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Não foi possível excluir o usuário.");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -444,6 +463,22 @@ export default function AdminUsersPage() {
                 <p className="mt-2 text-xs font-medium text-emerald-700">{bonusMessage}</p>
               )}
             </div>
+
+            {detail.user.id !== user?.id && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+                <p className="text-sm font-bold text-rose-800">Excluir usuário</p>
+                <p className="mt-0.5 text-xs text-rose-700">
+                  Remove permanentemente a conta e todos os dados (transações, pagamentos,
+                  orçamentos e alertas). Essa ação não pode ser desfeita.
+                </p>
+                <Button
+                  onClick={() => setDeleteTarget(users?.find((entry) => entry.id === detail.user.id) ?? null)}
+                  className="mt-3 bg-rose-600 hover:bg-rose-700"
+                >
+                  <Trash2 className="h-4 w-4" /> Excluir usuário
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Modal>
@@ -471,6 +506,33 @@ export default function AdminUsersPage() {
               Promover
             </Button>
             <Button variant="secondary" onClick={() => setPromoteTarget(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title={deleteTarget ? `Excluir ${deleteTarget.name}` : "Excluir usuário"}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Tem certeza que deseja excluir permanentemente a conta{" "}
+            <span className="font-semibold text-slate-700">{deleteTarget?.email}</span> e todos os
+            dados associados? Essa ação não pode ser desfeita.
+          </p>
+          {deleteError && <p className="text-sm font-medium text-rose-600">{deleteError}</p>}
+          <div className="flex gap-2">
+            <Button
+              onClick={confirmDelete}
+              loading={deleteLoading}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              <Trash2 className="h-4 w-4" /> Excluir definitivamente
+            </Button>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
               Cancelar
             </Button>
           </div>

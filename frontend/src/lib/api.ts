@@ -296,6 +296,11 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify({ days }),
     }),
+  deleteUser: (userId: string) =>
+    apiFetch<{ ok: boolean; user: { id: string; name: string; email: string } }>(
+      `/admin/users/${userId}`,
+      { method: "DELETE" },
+    ),
 };
 
 export const categoriesApi = {

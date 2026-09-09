@@ -101,9 +101,11 @@ function TimelineRow({ month, income, expense }: SeriesItem) {
       >
         {style.icon}
       </div>
-      <div className="flex items-center gap-2 truncate">
-        <h3 className="text-[15px] font-semibold text-slate-900">{monthLabel(month)}</h3>
-        <p className={`truncate text-xs font-semibold ${style.text}`}>{label}</p>
+      <div className="flex min-w-0 items-center gap-2">
+        <h3 className="hidden text-[15px] font-semibold text-slate-900 sm:block">
+          {monthLabel(month)}
+        </h3>
+        <p className={`truncate text-xs font-semibold sm:block ${style.text}`}>{label}</p>
       </div>
       <div
         className={`justify-self-end rounded-lg px-2.5 py-1.5 text-[13px] font-bold min-w-[104px] text-center ${style.amount}`}
@@ -194,7 +196,7 @@ export function MonthlyEvolution({ series }: { series: SeriesItem[] }) {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 rounded-2xl border border-[#ececf5] bg-white p-4">
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#ececf5] bg-white p-4 sm:grid-cols-3">
             {legendItems.map((item) => {
               const style = statusStyle[item.status];
               return (

@@ -62,7 +62,7 @@ export function UpcomingPayments({ onPaid }: { onPaid: () => void }) {
           }`}
         >
           {data?.items.map((item) => (
-            <li key={item.id} className="flex items-center gap-3 py-3">
+            <li key={item.id} className="flex flex-wrap items-center gap-3 py-3 sm:flex-nowrap">
               <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
                 <span className="text-xs font-bold text-slate-700">
                   {formatDayMonth(item.date)}
@@ -73,13 +73,13 @@ export function UpcomingPayments({ onPaid }: { onPaid: () => void }) {
                   </span>
                 )}
               </div>
-              <p className="min-w-0 flex-1 truncate text-sm text-slate-700">
+              <p className="min-w-0 flex-1 break-words text-sm text-slate-700 sm:truncate">
                 <span className="font-semibold text-slate-800">
                   {item.subcategory || "Sem categoria"}
                 </span>
                 {item.description ? ` / ${item.description}` : ""}
               </p>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2 sm:ml-auto sm:flex-none sm:justify-end max-sm:ml-auto max-sm:mt-1 max-sm:w-full max-sm:justify-end">
                 <span className="text-sm font-bold text-slate-900">−{formatBRL(item.amount)}</span>
                 <Button
                   size="sm"

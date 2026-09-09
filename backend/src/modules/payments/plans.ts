@@ -22,18 +22,18 @@ export const PLANS: Plan[] = [
   {
     id: "semestral",
     label: "Semestral",
-    priceBRL: 139.0,
+    priceBRL: 119.0,
     days: 180,
-    tagline: "Praticidade no uso, você economiza R$10,40",
+    tagline: "Praticidade no uso, você economiza R$30,40",
     note: "6 meses de acesso.",
   },
   {
     id: "anual",
     label: "Anual",
-    priceBRL: 249.0,
+    priceBRL: 209.0,
     days: 365,
-    tagline: "2 meses por nossa conta, você economiza R$49,80",
-    note: "12 meses pelo preço de 10.",
+    tagline: "Seu melhor custo-benefício, você economiza R$89,80",
+    note: "12 meses de acesso.",
     featured: true,
   },
 ];
