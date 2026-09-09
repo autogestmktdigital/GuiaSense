@@ -49,15 +49,20 @@ export async function chatCompletion(options: {
   const startedAt = Date.now();
 
   try {
-    const completion = await getDeepSeekClient().chat.completions.create({
+    const params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
       model,
       messages: [
         { role: "system", content: options.system },
         { role: "user", content: options.user },
       ],
       temperature: 0.4,
-      max_tokens: options.maxTokens ?? 200,
-    });
+      max_tokens: options.maxTokens ?? 400,
+    };
+
+    const completion = await getDeepSeekClient().chat.completions.create(
+      params,
+      { body: { ...params, thinking: { type: "disabled" } } },
+    );
 
     const latencyMs = Date.now() - startedAt;
     const usage = completion.usage;
