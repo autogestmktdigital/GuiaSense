@@ -31,12 +31,16 @@ async function generateMessage(
   if (deepseekEnabled()) {
     try {
       const system = buildSystemPrompt();
-      const first = await chatCompletion({ system, user: buildUserPrompt(facts, false) });
+      const first = await chatCompletion({
+        system,
+        user: buildUserPrompt(facts, false),
+        feature: "d5",
+      });
       if (isValidProjectionMessage(first, facts)) {
         return { message: first.trim(), origin: MonthProjectionOrigin.IA };
       }
 
-      const second = await chatCompletion({ system, user: buildUserPrompt(facts, true) });
+      const second = await chatCompletion({ system, user: buildUserPrompt(facts, true), feature: "d5" });
       if (isValidProjectionMessage(second, facts)) {
         return { message: second.trim(), origin: MonthProjectionOrigin.IA };
       }

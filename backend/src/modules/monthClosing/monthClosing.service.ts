@@ -42,12 +42,20 @@ async function generateMessage(
   if (deepseekEnabled()) {
     try {
       const system = buildSystemPrompt();
-      const first = await chatCompletion({ system, user: buildUserPrompt(facts, false) });
+      const first = await chatCompletion({
+        system,
+        user: buildUserPrompt(facts, false),
+        feature: "fechamento_mensal",
+      });
       if (isValidClosingMessage(first, facts)) {
         return { message: first.trim(), origin: MonthClosingOrigin.IA };
       }
 
-      const second = await chatCompletion({ system, user: buildUserPrompt(facts, true) });
+      const second = await chatCompletion({
+        system,
+        user: buildUserPrompt(facts, true),
+        feature: "fechamento_mensal",
+      });
       if (isValidClosingMessage(second, facts)) {
         return { message: second.trim(), origin: MonthClosingOrigin.IA };
       }

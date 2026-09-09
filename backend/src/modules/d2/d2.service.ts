@@ -31,13 +31,21 @@ async function generateMessage(
   if (deepseekEnabled()) {
     try {
       const system = buildD2SystemPrompt();
-      const first = await chatCompletion({ system, user: buildD2UserPrompt(facts, false) });
+      const first = await chatCompletion({
+        system,
+        user: buildD2UserPrompt(facts, false),
+        feature: "d2",
+      });
       if (isValidD2Message(first, facts)) {
         return { message: first.trim(), origin: MonthProjectionOrigin.IA };
       }
 
       console.warn("[d2] Resposta inicial da IA rejeitada, tentando novamente.");
-      const second = await chatCompletion({ system, user: buildD2UserPrompt(facts, true) });
+      const second = await chatCompletion({
+        system,
+        user: buildD2UserPrompt(facts, true),
+        feature: "d2",
+      });
       if (isValidD2Message(second, facts)) {
         return { message: second.trim(), origin: MonthProjectionOrigin.IA };
       }
