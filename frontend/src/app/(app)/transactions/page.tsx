@@ -147,18 +147,80 @@ export default function TransactionsPage() {
         />
       ) : (
         <Card className="p-0">
-          <ul className="divide-y divide-slate-100">
+          <ul className="max-sm:space-y-3 sm:divide-y sm:divide-slate-100 sm:space-y-0">
             {filtered.map((transaction) => (
-              <li key={transaction.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:px-5">
+              <li
+                key={transaction.id}
+                className="max-sm:rounded-2xl max-sm:border max-sm:border-slate-200 max-sm:bg-white max-sm:p-3 max-sm:shadow-sm sm:flex sm:items-center sm:gap-3 sm:px-5 sm:py-3"
+              >
+                <div className="sm:hidden">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        transaction.type === "EXPENSE" ? "bg-rose-50" : "bg-emerald-50"
+                      }`}
+                    >
+                      <CategoryIcon
+                        name={transaction.category.icon}
+                        color={transaction.category.color}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {transaction.description}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {transaction.category.name}
+                        {transaction.subcategory ? ` · ${transaction.subcategory}` : ""} ·{" "}
+                        {formatDate(transaction.date)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                    <span
+                      className={`text-sm font-bold ${
+                        transaction.type === "EXPENSE" ? "text-rose-600" : "text-emerald-600"
+                      }`}
+                    >
+                      {transaction.type === "EXPENSE" ? "−" : "+"}
+                      {formatBRL(Number(transaction.amount))}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePaid(transaction)}
+                        title={transaction.paid ? "Marcar como pendente" : "Marcar como pago"}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors hover:brightness-95 ${paidInfo(transaction).className}`}
+                      >
+                        {paidInfo(transaction).label}
+                      </button>
+                      <button
+                        onClick={() => openEdit(transaction)}
+                        className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(transaction)}
+                        className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:flex ${
                     transaction.type === "EXPENSE" ? "bg-rose-50" : "bg-emerald-50"
                   }`}
                 >
                   <CategoryIcon name={transaction.category.icon} color={transaction.category.color} />
                 </div>
-                <div className="min-w-0 flex-1 sm:min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 sm:truncate">
+                <div className="hidden min-w-0 flex-1 sm:block">
+                  <p className="truncate text-sm font-semibold text-slate-800">
                     {transaction.description}
                   </p>
                   <p className="text-xs text-slate-400">
@@ -167,24 +229,23 @@ export default function TransactionsPage() {
                     {formatDate(transaction.date)}
                   </p>
                 </div>
-                <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:ml-0 sm:flex-nowrap sm:gap-x-3 sm:gap-y-0">
-                  <span
-                    className={`shrink-0 text-sm font-bold ${
-                      transaction.type === "EXPENSE" ? "text-rose-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {transaction.type === "EXPENSE" ? "−" : "+"}
-                    {formatBRL(Number(transaction.amount))}
-                  </span>
+                <span
+                  className={`hidden shrink-0 text-sm font-bold sm:block ${
+                    transaction.type === "EXPENSE" ? "text-rose-600" : "text-emerald-600"
+                  }`}
+                >
+                  {transaction.type === "EXPENSE" ? "−" : "+"}
+                  {formatBRL(Number(transaction.amount))}
+                </span>
                 <button
                   type="button"
                   onClick={() => handleTogglePaid(transaction)}
                   title={transaction.paid ? "Marcar como pendente" : "Marcar como pago"}
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors hover:brightness-95 ${paidInfo(transaction).className}`}
+                  className={`hidden rounded-full px-2.5 py-1 text-xs font-semibold transition-colors hover:brightness-95 sm:inline-block ${paidInfo(transaction).className}`}
                 >
                   {paidInfo(transaction).label}
                 </button>
-                <div className="flex shrink-0 gap-1">
+                <div className="hidden shrink-0 gap-1 sm:flex">
                   <button
                     onClick={() => openEdit(transaction)}
                     className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
@@ -199,7 +260,6 @@ export default function TransactionsPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
-                </div>
                 </div>
               </li>
             ))}
