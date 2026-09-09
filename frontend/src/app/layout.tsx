@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { ConsentBanner } from "@/components/consent-banner";
+import { PwaRegister } from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,19 @@ export const metadata: Metadata = {
   title: "GuiaSense — Suas finanças com clareza",
   description:
     "Organize entradas e saídas, defina orçamentos e receba alertas e orientações para cuidar do seu dinheiro com simplicidade.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "GuiaSense",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
 };
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -75,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AnalyticsProvider>{children}</AnalyticsProvider>
           <ConsentBanner />
         </Providers>
+        <PwaRegister />
       </body>
     </html>
   );
