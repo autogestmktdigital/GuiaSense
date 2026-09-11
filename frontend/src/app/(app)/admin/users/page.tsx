@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RefreshCw, Loader2, CreditCard, CalendarDays, Trash2 } from "lucide-react";
+import { Search, RefreshCw, Loader2, CreditCard, CalendarDays, Trash2, FileText, Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,15 @@ const paymentStatusLabel: Record<string, string> = {
   EXPIRED: "Expirado",
 };
 
+const nfeStatusLabel: Record<string, string> = {
+  autorizado: "Autorizada",
+  processando_autorizacao: "Em processamento",
+  erro_autorizacao: "Erro na autorização",
+  sem_dados_fiscais: "Sem dados fiscais",
+  nao_autorizado: "Não autorizada",
+  cancelado: "Cancelada",
+};
+
 const planLabel: Record<string, string> = {
   mensal: "Mensal",
   semestral: "Semestral",
@@ -73,6 +82,8 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [emittingNfse, setEmittingNfse] = useState<string | null>(null);
+  const [emitError, setEmitError] = useState("");
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
@@ -92,6 +103,22 @@ export default function AdminUsersPage() {
       setDetailError(err instanceof Error ? err.message : "Não foi possível carregar os dados.");
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function emitNfse(paymentId: string) {
+    setEmittingNfse(paymentId);
+    setEmitError("");
+    try {
+      await adminApi.emitNfse(paymentId);
+      if (selectedUser) {
+        const data = await adminApi.userDetail(selectedUser.id);
+        setDetail(data);
+      }
+    } catch (err) {
+      setEmitError(err instanceof Error ? err.message : "Não foi possível emitir a nota.");
+    } finally {
+      setEmittingNfse(null);
     }
   }
 
@@ -345,13 +372,29 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     {item.lastPayment ? (
-                      <div className="flex items-center gap-2">
-                        <Badge severity={paymentBadge[item.lastPayment.status] ?? "neutral"}>
-                          {paymentStatusLabel[item.lastPayment.status] ?? item.lastPayment.status}
-                        </Badge>
-                        <span className="text-slate-600">
-                          {formatBRL(Number(item.lastPayment.amountBRL))}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Badge severity={paymentBadge[item.lastPayment.status] ?? "neutral"}>
+                            {paymentStatusLabel[item.lastPayment.status] ?? item.lastPayment.status}
+                          </Badge>
+                          <span className="text-slate-600">
+                            {formatBRL(Number(item.lastPayment.amountBRL))}
+                          </span>
+                        </div>
+                        {item.lastPayment.nfeUrl ? (
+                          <a
+                            href={item.lastPayment.nfeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> Baixar NFS-e
+                          </a>
+                        ) : item.lastPayment.nfeStatus ? (
+                          <span className="text-xs text-slate-400">
+                            {nfeStatusLabel[item.lastPayment.nfeStatus] ?? item.lastPayment.nfeStatus}
+                          </span>
+                        ) : null}
                       </div>
                     ) : (
                       <span className="text-slate-400">—</span>
@@ -387,6 +430,7 @@ export default function AdminUsersPage() {
           </div>
         )}
         {detailError && <p className="text-sm font-medium text-rose-600">{detailError}</p>}
+        {emitError && <p className="text-sm font-medium text-rose-600">{emitError}</p>}
         {detail && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -414,22 +458,53 @@ export default function AdminUsersPage() {
                 <div className="max-h-[55vh] overflow-y-auto">
                   <ul className="divide-y divide-slate-100">
                     {detail.payments.map((payment) => (
-                      <li key={payment.id} className="flex items-center justify-between gap-3 py-2.5">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-800">
-                            {planLabel[payment.plan] ?? payment.plan}
-                          </p>
-                          <p className="text-xs text-slate-400">{formatDate(payment.createdAt)}</p>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-1">
-                          <span className="text-sm font-bold text-slate-900">
-                            {formatBRL(payment.amountBRL)}
-                          </span>
-                          <Badge severity={paymentBadge[payment.status] ?? "neutral"}>
-                            {paymentStatusLabel[payment.status] ?? payment.status}
-                          </Badge>
-                        </div>
-                      </li>
+<li key={payment.id} className="flex items-center justify-between gap-3 py-2.5">
+  <div className="min-w-0">
+    <p className="text-sm font-semibold text-slate-800">
+      {planLabel[payment.plan] ?? payment.plan}
+    </p>
+    <p className="text-xs text-slate-400">{formatDate(payment.createdAt)}</p>
+  </div>
+  <div className="flex shrink-0 flex-col items-end gap-1">
+    <span className="text-sm font-bold text-slate-900">
+      {formatBRL(payment.amountBRL)}
+    </span>
+    <Badge severity={paymentBadge[payment.status] ?? "neutral"}>
+      {paymentStatusLabel[payment.status] ?? payment.status}
+    </Badge>
+    {payment.nfeUrl ? (
+      <a
+        href={payment.nfeUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 transition-colors hover:text-brand-700 hover:underline"
+      >
+        <FileText className="h-3.5 w-3.5" /> Baixar NFS-e
+      </a>
+    ) : payment.status === "APPROVED" ? (
+      <button
+        type="button"
+        onClick={() => emitNfse(payment.id)}
+        disabled={emittingNfse === payment.id}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 transition-colors hover:text-brand-700 disabled:opacity-50"
+      >
+        {emittingNfse === payment.id ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Emitindo...
+          </>
+        ) : (
+          <>
+            <Send className="h-3.5 w-3.5" /> Emitir nota
+          </>
+        )}
+      </button>
+    ) : payment.nfeStatus ? (
+      <span className="text-xs text-slate-400">
+        {nfeStatusLabel[payment.nfeStatus] ?? payment.nfeStatus}
+      </span>
+    ) : null}
+  </div>
+</li>
                     ))}
                   </ul>
                 </div>

@@ -207,7 +207,16 @@ export async function listUsers() {
       _count: { select: { transactions: true, payments: true } },
       payments: {
         orderBy: { createdAt: "desc" },
-        select: { status: true, plan: true, amountBRL: true, createdAt: true },
+        select: {
+          status: true,
+          plan: true,
+          amountBRL: true,
+          createdAt: true,
+          nfeUrl: true,
+          nfeNumber: true,
+          nfeStatus: true,
+          nfeEmittedAt: true,
+        },
       },
     },
   });
@@ -263,6 +272,10 @@ export async function getUserDetail(userId: string) {
       plan: payment.plan,
       amountBRL: Number(payment.amountBRL),
       createdAt: payment.createdAt,
+      nfeUrl: payment.nfeUrl,
+      nfeNumber: payment.nfeNumber,
+      nfeStatus: payment.nfeStatus,
+      nfeEmittedAt: payment.nfeEmittedAt,
     })),
   };
 }

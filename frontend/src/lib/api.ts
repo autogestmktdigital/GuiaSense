@@ -234,7 +234,15 @@ export type AdminUser = {
   trialExpiresAt: string | null;
   transactions: number;
   monthsHired: number;
-  lastPayment: { status: string; plan: string; amountBRL: string; createdAt: string } | null;
+  lastPayment: {
+    status: string;
+    plan: string;
+    amountBRL: string;
+    createdAt: string;
+    nfeUrl: string | null;
+    nfeNumber: string | null;
+    nfeStatus: string | null;
+  } | null;
 };
 
 export type AdminRevenueMonth = {
@@ -254,6 +262,9 @@ export type AdminUserPayment = {
   plan: string;
   amountBRL: number;
   createdAt: string;
+  nfeUrl: string | null;
+  nfeNumber: string | null;
+  nfeStatus: string | null;
 };
 
 export type AdminUserDetail = {
@@ -301,6 +312,11 @@ export const adminApi = {
       `/admin/users/${userId}`,
       { method: "DELETE" },
     ),
+  emitNfse: (paymentId: string) =>
+    apiFetch<{ ok: boolean }>(`/admin/payments/${paymentId}/nfse/emit`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
 };
 
 export const categoriesApi = {
