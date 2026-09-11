@@ -11,6 +11,7 @@ import {
   Save,
   UserX,
   MapPin,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import { Field, Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { PageLoader } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/auth-context";
-import { paymentsApi, usersApi, Plan, PlanId } from "@/lib/api";
+import { paymentsApi, usersApi, Plan, PlanId, UserInvoice } from "@/lib/api";
 import { formatBRL, formatDateShort } from "@/lib/format";
 
 const paymentStatusLabel: Record<string, string> = {
@@ -27,6 +28,15 @@ const paymentStatusLabel: Record<string, string> = {
   REJECTED: "Recusado",
   CANCELLED: "Cancelado",
   EXPIRED: "Expirado",
+};
+
+const nfeStatusLabel: Record<string, string> = {
+  autorizado: "Autorizada",
+  processando_autorizacao: "Em processamento",
+  erro_autorizacao: "Erro na autorização",
+  sem_dados_fiscais: "Dados fiscais pendentes",
+  nao_autorizado: "Não autorizada",
+  cancelado: "Cancelada",
 };
 
 const accessBadge: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
@@ -98,6 +108,7 @@ export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
   const [name, setName] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<UserInvoice[]>([]);
   const [lastAmount, setLastAmount] = useState<number | null>(null);
   const [lastPlan, setLastPlan] = useState<string | null>(null);
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
@@ -150,6 +161,10 @@ export default function SettingsPage() {
     refreshPaymentStatus()
       .catch(() => {})
       .finally(() => setLoading(false));
+    paymentsApi
+      .invoices()
+      .then((data) => setInvoices(data.invoices))
+      .catch(() => {});
   }, [user]);
 
   if (loading) return <PageLoader />;
@@ -468,6 +483,51 @@ export default function SettingsPage() {
           </p>
         </div>
       </Card>
+
+      {invoices.length > 0 && (
+        <Card>
+          <CardHeader title="Notas fiscais" subtitle="NFS-e das suas assinaturas" />
+          <div className="space-y-2">
+            {invoices.map((invoice) => {
+              const planLabel =
+                plans.find((plan) => plan.id === invoice.plan)?.label ??
+                (invoice.plan
+                  ? invoice.plan.charAt(0).toUpperCase() + invoice.plan.slice(1)
+                  : "Mensal");
+              return (
+                <div
+                  key={invoice.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">
+                      {formatDateShort(invoice.nfeEmittedAt ?? invoice.createdAt)} · {planLabel} ·{" "}
+                      {formatBRL(Number(invoice.amountBRL))}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {invoice.nfeNumber ? `NFS-e nº ${invoice.nfeNumber}` : "Número pendente"}
+                    </p>
+                  </div>
+                  {invoice.nfeUrl ? (
+                    <a
+                      href={invoice.nfeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:border-brand-300"
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Baixar NFS-e
+                    </a>
+                  ) : (
+                    <span className="text-xs font-medium text-slate-400">
+                      {nfeStatusLabel[invoice.nfeStatus ?? ""] ?? "Em processamento"}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card className="flex items-center justify-between">
         <div>

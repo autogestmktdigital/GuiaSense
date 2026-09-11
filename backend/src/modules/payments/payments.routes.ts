@@ -14,6 +14,11 @@ router.get("/status", requireAuth, async (req: AuthRequest, res) => {
   res.json(status);
 });
 
+router.get("/invoices", requireAuth, async (req: AuthRequest, res) => {
+  const invoices = await paymentsService.listUserInvoices(req.user!.id);
+  res.json({ invoices });
+});
+
 router.post("/checkout", requireAuth, async (req: AuthRequest, res) => {
   const plan = (req.body as { plan?: string }).plan;
   const checkout = await paymentsService.createCheckout(req.user!.id, plan);

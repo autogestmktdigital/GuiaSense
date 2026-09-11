@@ -371,9 +371,21 @@ export type PaymentStatusResponse = {
   lastPayment: { id: string; status: string; plan: string; amountBRL: string; createdAt: string } | null;
 };
 
+export type UserInvoice = {
+  id: string;
+  plan: string;
+  amountBRL: string;
+  createdAt: string;
+  nfeNumber: string | null;
+  nfeStatus: string | null;
+  nfeUrl: string | null;
+  nfeEmittedAt: string | null;
+};
+
 export const paymentsApi = {
   plans: () => apiFetch<{ plans: Plan[] }>("/payments/plans"),
   status: () => apiFetch<PaymentStatusResponse>("/payments/status"),
+  invoices: () => apiFetch<{ invoices: UserInvoice[] }>("/payments/invoices"),
   checkout: (plan: PlanId) =>
     apiFetch<{ mode: "simulated" | "mercadopago"; paymentId: string; initPoint?: string }>(
       "/payments/checkout",

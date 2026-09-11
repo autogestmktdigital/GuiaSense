@@ -154,6 +154,24 @@ async function applyPaymentApproval(payment: {
   return { ok: true };
 }
 
+export async function listUserInvoices(userId: string) {
+  const payments = await prisma.payment.findMany({
+    where: { userId, status: PaymentStatus.APPROVED },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      plan: true,
+      amountBRL: true,
+      createdAt: true,
+      nfeNumber: true,
+      nfeStatus: true,
+      nfeUrl: true,
+      nfeEmittedAt: true,
+    },
+  });
+  return payments;
+}
+
 export async function handleWebhook(body: unknown) {
   if (env.mercadopagoWebhookSecret && typeof body === "object" && body) {
     const secret = (body as { secret?: string }).secret;
