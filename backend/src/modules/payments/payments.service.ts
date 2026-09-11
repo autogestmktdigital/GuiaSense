@@ -4,6 +4,7 @@ import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { HttpError } from "../../lib/httpError";
 import { getPlan, GRACE_DAYS, PLANS, planExpiresFor, TRIAL_DAYS } from "./plans";
+import { emitInvoiceForPayment } from "./nfse.service";
 
 function hasMpConfigured(): boolean {
   return Boolean(env.mercadopagoAccessToken);
@@ -147,6 +148,8 @@ async function applyPaymentApproval(payment: {
       trialExpiresAt: null,
     },
   });
+
+  await emitInvoiceForPayment(payment.id).catch(() => undefined);
 
   return { ok: true };
 }

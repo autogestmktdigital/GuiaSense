@@ -24,6 +24,13 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
+# Backups
+backup/
+
+# Local dev artifacts
+dev.err
+_payid.txt
+
 # Editor / OS
 .vscode/
 .idea/

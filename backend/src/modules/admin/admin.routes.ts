@@ -16,6 +16,7 @@ import {
   accessStatusLabel,
 } from "./admin.service";
 import { reconcileByMpPaymentId } from "../payments/payments.service";
+import { emitInvoiceForPayment, consultInvoice } from "../payments/nfse.service";
 
 const router = Router();
 
@@ -96,6 +97,16 @@ router.get("/payment-status-labels", (_req: AuthRequest, res) => {
 
 router.get("/access-status-labels", (_req: AuthRequest, res) => {
   res.json({ labels: accessStatusLabel });
+});
+
+router.post("/payments/:paymentId/nfse/emit", async (req: AuthRequest, res) => {
+  await emitInvoiceForPayment(req.params.paymentId);
+  res.json({ ok: true });
+});
+
+router.get("/payments/:paymentId/nfse", async (req: AuthRequest, res) => {
+  const data = await consultInvoice(req.params.paymentId);
+  res.json(data);
 });
 
 export default router;

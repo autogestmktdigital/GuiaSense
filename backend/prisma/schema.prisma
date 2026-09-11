@@ -312,6 +312,12 @@ model Payment {
   amountBRL   Decimal       @db.Decimal(12, 2)
   mpPaymentId String?
   mpPreferenceId String?
+  nfeRef      String?
+  nfeNumber   String?
+  nfeStatus   String?
+  nfeUrl      String?
+  nfeMessage  String?
+  nfeEmittedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

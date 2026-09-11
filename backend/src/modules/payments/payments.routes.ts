@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth, AuthRequest } from "../../middleware/auth";
 import * as paymentsService from "./payments.service";
+import { handleNfseWebhook } from "./nfse.service";
 
 const router = Router();
 
@@ -21,6 +22,11 @@ router.post("/checkout", requireAuth, async (req: AuthRequest, res) => {
 
 router.post("/webhook", async (req, res) => {
   const result = await paymentsService.handleWebhook(req.body);
+  res.json(result);
+});
+
+router.post("/nfse-webhook", async (req, res) => {
+  const result = await handleNfseWebhook(req.body, req.get("authorization"));
   res.json(result);
 });
 
