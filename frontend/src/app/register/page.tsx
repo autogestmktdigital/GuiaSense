@@ -125,8 +125,11 @@ export default function RegisterPage() {
 
         <Button type="submit" fullWidth size="lg" loading={loading}>
           <UserPlus className="h-5 w-5" />
-          Criar conta
+          Começar meus 8 dias grátis
         </Button>
+        <p className="text-center text-sm text-slate-500">
+          Sem cartão de crédito • Sem cobrança automática
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
