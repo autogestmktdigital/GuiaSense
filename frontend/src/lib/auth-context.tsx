@@ -9,6 +9,9 @@ import {
   setToken,
 } from "./api";
 
+const SESSION_IDLE_MINUTES = 30;
+const IDLE_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "scroll"] as const;
+
 type AuthContextType = {
   user: PublicUser | null;
   loading: boolean;
@@ -19,6 +22,33 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+function useIdleSessionTimeout(active: boolean, onExpire: () => void) {
+  useEffect(() => {
+    if (!active) return;
+
+    const idleMs = SESSION_IDLE_MINUTES * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const reset = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(onExpire, idleMs);
+    };
+
+    IDLE_EVENTS.forEach((event) =>
+      window.addEventListener(event, reset, { passive: true }),
+    );
+
+    reset();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      IDLE_EVENTS.forEach((event) =>
+        window.removeEventListener(event, reset),
+      );
+    };
+  }, [active, onExpire]);
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -60,6 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setUser(null);
   }, []);
+
+  useIdleSessionTimeout(Boolean(user), () => {
+    logout();
+    window.location.href = "/login";
+  });
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
